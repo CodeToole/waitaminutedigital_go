@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/CodeToole/waitaminutedigital_go/internal/notify"
 	"github.com/labstack/echo/v4"
 )
 
@@ -39,7 +43,7 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 		{
 			name:       "contact",
 			path:       "/contact",
-			want:       []string{"Contact · Waitaminute Digital", "name=\"name\"", "name=\"email\"", "name=\"subject\"", "Game Dev", "Custom Software", "Automation", "Other", "name=\"message\"", "name=\"website\""},
+			want:       []string{"Contact · Waitaminute Digital", "name=\"name\"", "name=\"email\"", "name=\"subject\"", "Game Development", "Web Development", "Custom Software", "Other", "name=\"message\"", "name=\"website\""},
 			activeLink: `href="/contact" aria-current="page">Contact</a>`,
 		},
 	}
@@ -60,6 +64,52 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 			}
 			if !strings.Contains(rec.Body.String(), tc.activeLink) {
 				t.Errorf("active nav link %q not found", tc.activeLink)
+			}
+		})
+	}
+}
+
+func TestClarityScriptIsEnvGated(t *testing.T) {
+	const clarityID = "wp42rt08kj"
+	clarityMarker := `"clarity", "script", "` + clarityID + `"`
+
+	tests := []struct {
+		name        string
+		options     serverOptions
+		path        string
+		wantPresent bool
+	}{
+		{
+			name:        "absent in development",
+			options:     serverOptions{Production: false, ClarityID: clarityID},
+			path:        "/",
+			wantPresent: false,
+		},
+		{
+			name:        "absent on /admin in production",
+			options:     serverOptions{Production: true, ClarityID: clarityID},
+			path:        "/admin/login",
+			wantPresent: false,
+		},
+		{
+			name:        "present on / in production",
+			options:     serverOptions{Production: true, ClarityID: clarityID},
+			path:        "/",
+			wantPresent: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server, _ := testServer(t, tc.options)
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
+
+			body := rec.Body.String()
+			present := strings.Contains(body, clarityMarker)
+			if present != tc.wantPresent {
+				t.Errorf("clarity snippet present = %v, want %v", present, tc.wantPresent)
 			}
 		})
 	}
@@ -200,6 +250,97 @@ func TestContactHXResponseIsFragment(t *testing.T) {
 	if count := inquiryCount(t, database); count != 1 {
 		t.Fatalf("inquiry count = %d, want 1", count)
 	}
+}
+
+// fakeNotifier is a test double for notify.Notifier: it records every call
+// on a channel instead of making a real network request, which is what
+// lets the tests below assert on the async goroutine without sleeping.
+type fakeNotifier struct {
+	calls chan notify.InquiryNotification
+	err   error
+}
+
+func newFakeNotifier(err error) *fakeNotifier {
+	return &fakeNotifier{calls: make(chan notify.InquiryNotification, 10), err: err}
+}
+
+var errFakeNotifyFailed = errors.New("fake notifier failure")
+
+func (f *fakeNotifier) Notify(_ context.Context, notification notify.InquiryNotification) error {
+	f.calls <- notification
+	return f.err
+}
+
+func (f *fakeNotifier) expectCall(t *testing.T) notify.InquiryNotification {
+	t.Helper()
+	select {
+	case notification := <-f.calls:
+		return notification
+	case <-time.After(2 * time.Second):
+		t.Fatal("notifier was not called")
+		return notify.InquiryNotification{}
+	}
+}
+
+func (f *fakeNotifier) expectNoCall(t *testing.T) {
+	t.Helper()
+	select {
+	case notification := <-f.calls:
+		t.Fatalf("notifier should not have been called, got %+v", notification)
+	case <-time.After(150 * time.Millisecond):
+	}
+}
+
+func TestContactValidSubmitNotifiesExactlyOnce(t *testing.T) {
+	notifier := newFakeNotifier(nil)
+	server, database := testServer(t, serverOptions{Notifier: notifier})
+
+	response := postContact(t, server, validContactForm(), false)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+	if count := inquiryCount(t, database); count != 1 {
+		t.Fatalf("inquiry count = %d, want 1", count)
+	}
+
+	notification := notifier.expectCall(t)
+	if notification.Name != "Neil" || notification.Email != "neil@example.com" || notification.Subject != "Custom Software" {
+		t.Errorf("notification fields were not preserved: %+v", notification)
+	}
+	if !strings.HasSuffix(notification.AdminURL, "/admin/inquiries") {
+		t.Errorf("AdminURL = %q, want suffix /admin/inquiries", notification.AdminURL)
+	}
+	notifier.expectNoCall(t)
+}
+
+func TestContactHoneypotDoesNotNotify(t *testing.T) {
+	notifier := newFakeNotifier(nil)
+	server, _ := testServer(t, serverOptions{Notifier: notifier})
+
+	form := validContactForm()
+	form.Set("website", "https://spam.example")
+	response := postContact(t, server, form, false)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+	notifier.expectNoCall(t)
+}
+
+func TestContactNotifierErrorStillReturnsSuccess(t *testing.T) {
+	notifier := newFakeNotifier(errFakeNotifyFailed)
+	server, database := testServer(t, serverOptions{Notifier: notifier})
+
+	response := postContact(t, server, validContactForm(), false)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), "Thanks for reaching out.") {
+		t.Fatalf("success message missing despite notifier error: %s", response.Body.String())
+	}
+	if count := inquiryCount(t, database); count != 1 {
+		t.Fatalf("inquiry count = %d, want 1", count)
+	}
+	notifier.expectCall(t)
 }
 
 func validContactForm() url.Values {

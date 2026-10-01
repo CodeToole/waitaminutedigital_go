@@ -1,10 +1,13 @@
 package views
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/a-h/templ"
 )
 
 const (
@@ -12,6 +15,15 @@ const (
 	defaultDescription = "Indie game dev, Python, and problem-first software from Waitaminute Digital."
 	defaultImage       = "/static/img/mascot_head.webp"
 )
+
+// SiteConfig carries the process-wide settings every page needs to render
+// SEO tags and third-party scripts consistently, instead of passing each
+// value as its own handler parameter.
+type SiteConfig struct {
+	SiteURL    string
+	Production bool
+	ClarityID  string
+}
 
 // PageMeta contains the page-specific SEO values consumed by Layout.
 type PageMeta struct {
@@ -23,10 +35,11 @@ type PageMeta struct {
 	OGType        string
 	Canonical     string
 	ImageURL      string
+	ClarityID     string
 }
 
 // NewPageMeta applies site defaults and resolves share URLs against SITE_URL.
-func NewPageMeta(siteURL string, meta PageMeta) PageMeta {
+func NewPageMeta(site SiteConfig, meta PageMeta) PageMeta {
 	if meta.Title == "" {
 		meta.Title = siteName
 	} else if meta.Title != siteName && !strings.HasSuffix(meta.Title, " · "+siteName) {
@@ -45,13 +58,29 @@ func NewPageMeta(siteURL string, meta PageMeta) PageMeta {
 	if canonicalPath == "" {
 		canonicalPath = meta.Path
 	}
-	meta.Canonical = absoluteURL(siteURL, canonicalPath)
-	meta.ImageURL = absoluteURL(siteURL, meta.Image)
+	meta.Canonical = absoluteURL(site.SiteURL, canonicalPath)
+	meta.ImageURL = absoluteURL(site.SiteURL, meta.Image)
+	if site.Production && site.ClarityID != "" && !strings.HasPrefix(meta.Path, "/admin") {
+		meta.ClarityID = site.ClarityID
+	}
 	return meta
 }
 
 func IsCurrent(path string, href string) bool {
 	return path == href || strings.HasPrefix(path, href+"/")
+}
+
+// ClarityScript renders the official Microsoft Clarity tracking snippet.
+// clarityID is validated as alphanumeric by config.Load before reaching here,
+// so it is safe to place directly inside the JS string literal below.
+func ClarityScript(clarityID string) templ.Component {
+	return templ.Raw(fmt.Sprintf(`<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", %q);
+</script>`, clarityID))
 }
 
 func CopyrightYear() string {
@@ -130,6 +159,13 @@ func AdminToggleLabel(published bool) string {
 	return "Publish"
 }
 
+func AdminToggleClass(published bool) string {
+	if published {
+		return "btn-draft"
+	}
+	return "btn-publish"
+}
+
 func AdminReadLabel(read bool) string {
 	if read {
 		return "Read"
@@ -149,6 +185,23 @@ func InquiryToggleLabel(read bool) string {
 		return "Mark unread"
 	}
 	return "Mark read"
+}
+
+func AdminNotice(value string) string {
+	switch value {
+	case "saved":
+		return "Saved"
+	case "published":
+		return "Published"
+	case "draft":
+		return "Draft"
+	case "deleted":
+		return "Deleted"
+	case "highlight-created":
+		return "Highlight Created"
+	default:
+		return ""
+	}
 }
 
 func FormatDate(value string) string {

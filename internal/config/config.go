@@ -4,10 +4,16 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 )
+
+var clarityIDPattern = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+
+const defaultNotifyTo = "corneliustoole@waitaminutedigital.com"
 
 // Config holds all runtime configuration settings for the web application.
 // In Go, structs group related fields together (similar to Python dataclasses or classes with attributes).
@@ -19,6 +25,11 @@ type Config struct {
 	SessionSecret     string
 	Production        bool
 	UploadDir         string
+	ClarityID         string
+	ACSEndpoint       string
+	ACSAccessKey      string
+	NotifyFrom        string
+	NotifyTo          string
 }
 
 // Load reads configuration from environment variables, supplying safe local defaults.
@@ -56,6 +67,17 @@ func Load() (Config, error) {
 		}
 	}
 
+	clarityID := strings.TrimSpace(os.Getenv("CLARITY_ID"))
+	if clarityID != "" && !clarityIDPattern.MatchString(clarityID) {
+		log.Printf("CLARITY_ID %q is not alphanumeric; ignoring it", clarityID)
+		clarityID = ""
+	}
+
+	notifyTo := strings.TrimSpace(os.Getenv("NOTIFY_TO"))
+	if notifyTo == "" {
+		notifyTo = defaultNotifyTo
+	}
+
 	return Config{
 		Port:              port,
 		SiteDB:            siteDB,
@@ -64,6 +86,11 @@ func Load() (Config, error) {
 		SessionSecret:     os.Getenv("SESSION_SECRET"),
 		Production:        production,
 		UploadDir:         uploadDir,
+		ClarityID:         clarityID,
+		ACSEndpoint:       strings.TrimSpace(os.Getenv("ACS_ENDPOINT")),
+		ACSAccessKey:      strings.TrimSpace(os.Getenv("ACS_ACCESS_KEY")),
+		NotifyFrom:        strings.TrimSpace(os.Getenv("NOTIFY_FROM")),
+		NotifyTo:          notifyTo,
 	}, nil
 }
 

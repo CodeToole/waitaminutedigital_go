@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -27,13 +28,13 @@ const maxCoverUpload = 5 << 20
 var slugSeparators = regexp.MustCompile(`[^a-z0-9]+`)
 
 type Admin struct {
-	siteURL   string
+	site      views.SiteConfig
 	database  *sql.DB
 	uploadDir string
 }
 
-func NewAdmin(siteURL string, database *sql.DB, uploadDir string) *Admin {
-	return &Admin{siteURL: siteURL, database: database, uploadDir: uploadDir}
+func NewAdmin(site views.SiteConfig, database *sql.DB, uploadDir string) *Admin {
+	return &Admin{site: site, database: database, uploadDir: uploadDir}
 }
 
 func (admin *Admin) Dispatches(c echo.Context) error {
@@ -47,7 +48,7 @@ func (admin *Admin) Dispatches(c echo.Context) error {
 		return adminError(c, err)
 	}
 	return admin.render(c, "Dispatches", "/admin/dispatches", func(meta views.PageMeta, csrf string) error {
-		return views.AdminDispatchesPage(meta, csrf, articles, unread).Render(ctx, c.Response())
+		return views.AdminDispatchesPage(meta, csrf, articles, unread, views.AdminNotice(c.QueryParam("notice"))).Render(ctx, c.Response())
 	})
 }
 
@@ -94,7 +95,11 @@ func (admin *Admin) CreateArticle(c echo.Context) error {
 	if _, err := db.CreateArticle(c.Request().Context(), admin.database, article); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/dispatches")
+	notice := "saved"
+	if article.FeaturedHighlight {
+		notice = "highlight-created"
+	}
+	return c.Redirect(http.StatusSeeOther, "/admin/dispatches?notice="+notice)
 }
 
 func (admin *Admin) UpdateArticle(c echo.Context) error {
@@ -132,7 +137,11 @@ func (admin *Admin) UpdateArticle(c echo.Context) error {
 	if err := db.UpdateArticle(c.Request().Context(), admin.database, article); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/dispatches")
+	notice := "saved"
+	if !existing.FeaturedHighlight && article.FeaturedHighlight {
+		notice = "highlight-created"
+	}
+	return c.Redirect(http.StatusSeeOther, "/admin/dispatches?notice="+notice)
 }
 
 func (admin *Admin) DeleteArticle(c echo.Context) error {
@@ -140,10 +149,20 @@ func (admin *Admin) DeleteArticle(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
+	article, err := db.GetArticle(c.Request().Context(), admin.database, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+	if err != nil {
+		return adminError(c, err)
+	}
 	if err := db.DeleteArticle(c.Request().Context(), admin.database, id); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/dispatches")
+	if err := admin.removeUnusedCover(c.Request().Context(), article.CoverImage); err != nil {
+		c.Logger().Errorf("remove deleted dispatch cover: %v", err)
+	}
+	return c.Redirect(http.StatusSeeOther, "/admin/dispatches?notice=deleted")
 }
 
 func (admin *Admin) ToggleArticle(c echo.Context) error {
@@ -154,15 +173,24 @@ func (admin *Admin) ToggleArticle(c echo.Context) error {
 	if err := db.ToggleArticlePublished(c.Request().Context(), admin.database, id); err != nil {
 		return adminError(c, err)
 	}
+	notice := "published"
+	article, err := db.GetArticle(c.Request().Context(), admin.database, id)
+	if err != nil {
+		return adminError(c, err)
+	}
+	if !article.Published {
+		notice = "draft"
+	}
 	if c.Request().Header.Get("HX-Request") == "true" {
 		articles, err := db.ListAdminArticles(c.Request().Context(), admin.database)
 		if err != nil {
 			return adminError(c, err)
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
+		c.Response().Header().Set("HX-Trigger", `{"adminToast":{"message":"`+views.AdminNotice(notice)+`"}}`)
 		return views.AdminArticleList(articles, csrfValue(c)).Render(c.Request().Context(), c.Response())
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/dispatches")
+	return c.Redirect(http.StatusSeeOther, "/admin/dispatches?notice="+notice)
 }
 
 func (admin *Admin) Preview(c echo.Context) error {
@@ -190,7 +218,7 @@ func (admin *Admin) Highlights(c echo.Context) error {
 		return adminError(c, err)
 	}
 	return admin.render(c, "Highlights", "/admin/highlights", func(meta views.PageMeta, csrf string) error {
-		return views.AdminHighlightsPage(meta, csrf, highlights, models.Highlight{}, false, "", unread).Render(c.Request().Context(), c.Response())
+		return views.AdminHighlightsPage(meta, csrf, highlights, models.Highlight{}, false, "", unread, views.AdminNotice(c.QueryParam("notice"))).Render(c.Request().Context(), c.Response())
 	})
 }
 
@@ -204,7 +232,7 @@ func (admin *Admin) NewHighlight(c echo.Context) error {
 		return adminError(c, err)
 	}
 	return admin.render(c, "Highlights", "/admin/highlights", func(meta views.PageMeta, csrf string) error {
-		return views.AdminHighlightsPage(meta, csrf, highlights, models.Highlight{}, true, "", unread).Render(c.Request().Context(), c.Response())
+		return views.AdminHighlightsPage(meta, csrf, highlights, models.Highlight{}, true, "", unread, "").Render(c.Request().Context(), c.Response())
 	})
 }
 
@@ -226,7 +254,7 @@ func (admin *Admin) EditHighlight(c echo.Context) error {
 		return adminError(c, err)
 	}
 	return admin.render(c, "Highlights", "/admin/highlights", func(meta views.PageMeta, csrf string) error {
-		return views.AdminHighlightsPage(meta, csrf, highlights, highlight, false, "", unread).Render(c.Request().Context(), c.Response())
+		return views.AdminHighlightsPage(meta, csrf, highlights, highlight, false, "", unread, "").Render(c.Request().Context(), c.Response())
 	})
 }
 
@@ -238,7 +266,7 @@ func (admin *Admin) CreateHighlight(c echo.Context) error {
 	if _, err := db.CreateHighlight(c.Request().Context(), admin.database, highlight); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/highlights")
+	return c.Redirect(http.StatusSeeOther, "/admin/highlights?notice=highlight-created")
 }
 
 func (admin *Admin) UpdateHighlight(c echo.Context) error {
@@ -254,7 +282,7 @@ func (admin *Admin) UpdateHighlight(c echo.Context) error {
 	if err := db.UpdateHighlight(c.Request().Context(), admin.database, highlight); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/highlights")
+	return c.Redirect(http.StatusSeeOther, "/admin/highlights?notice=saved")
 }
 
 func (admin *Admin) DeleteHighlight(c echo.Context) error {
@@ -265,7 +293,7 @@ func (admin *Admin) DeleteHighlight(c echo.Context) error {
 	if err := db.DeleteHighlight(c.Request().Context(), admin.database, id); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/highlights")
+	return c.Redirect(http.StatusSeeOther, "/admin/highlights?notice=deleted")
 }
 
 func (admin *Admin) ToggleHighlight(c echo.Context) error {
@@ -273,10 +301,18 @@ func (admin *Admin) ToggleHighlight(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
+	highlight, err := db.GetHighlight(c.Request().Context(), admin.database, id)
+	if err != nil {
+		return adminError(c, err)
+	}
 	if err := db.ToggleHighlightPublished(c.Request().Context(), admin.database, id); err != nil {
 		return adminError(c, err)
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/highlights")
+	notice := "published"
+	if highlight.Published {
+		notice = "draft"
+	}
+	return c.Redirect(http.StatusSeeOther, "/admin/highlights?notice="+notice)
 }
 
 func (admin *Admin) Inquiries(c echo.Context) error {
@@ -316,12 +352,12 @@ func (admin *Admin) DeleteInquiry(c echo.Context) error {
 }
 
 func (admin *Admin) articleForm(c echo.Context, article models.Article, isNew bool, errorMessage string) error {
-	meta := views.NewPageMeta(admin.siteURL, views.PageMeta{Title: "Dispatch", Description: "Manage dispatches.", Path: "/admin/dispatches"})
+	meta := views.NewPageMeta(admin.site, views.PageMeta{Title: "Dispatch", Description: "Manage dispatches.", Path: "/admin/dispatches"})
 	return views.AdminArticleFormPage(meta, csrfValue(c), article, isNew, errorMessage).Render(c.Request().Context(), c.Response())
 }
 
 func (admin *Admin) render(c echo.Context, title string, path string, render func(views.PageMeta, string) error) error {
-	meta := views.NewPageMeta(admin.siteURL, views.PageMeta{Title: title, Description: "Manage Waitaminute Digital content.", Path: path})
+	meta := views.NewPageMeta(admin.site, views.PageMeta{Title: title, Description: "Manage Waitaminute Digital content.", Path: path})
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
 	return render(meta, csrfValue(c))
 }
@@ -335,6 +371,28 @@ func (admin *Admin) coverImage(c echo.Context, current string) (string, error) {
 		return current, fmt.Errorf("could not read cover upload")
 	}
 	return saveCoverImage(file, admin.uploadDir)
+}
+
+func (admin *Admin) removeUnusedCover(ctx context.Context, image string) error {
+	if !strings.HasPrefix(image, "/uploads/") {
+		return nil
+	}
+	filename := strings.TrimPrefix(image, "/uploads/")
+	if filename == "" || filepath.Base(filename) != filename {
+		return nil
+	}
+	count, err := db.CountCoverImageReferences(ctx, admin.database, image)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+	err = os.Remove(filepath.Join(admin.uploadDir, filename))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func saveCoverImage(fileHeader *multipart.FileHeader, uploadDir string) (string, error) {
@@ -413,12 +471,13 @@ func bindArticle(c echo.Context) (models.Article, error) {
 		return models.Article{}, err
 	}
 	article := models.Article{
-		Title:     strings.TrimSpace(form.Title),
-		Slug:      normalizeSlug(form.Slug),
-		Category:  strings.TrimSpace(form.Category),
-		Summary:   strings.TrimSpace(form.Summary),
-		BodyMD:    form.BodyMD,
-		Published: checkboxValue(c.FormValue("published")),
+		Title:             strings.TrimSpace(form.Title),
+		Slug:              normalizeSlug(form.Slug),
+		Category:          strings.TrimSpace(form.Category),
+		Summary:           strings.TrimSpace(form.Summary),
+		BodyMD:            form.BodyMD,
+		Published:         checkboxValue(c.FormValue("published")),
+		FeaturedHighlight: checkboxValue(c.FormValue("featured_highlight")),
 	}
 	if article.Slug == "" {
 		article.Slug = normalizeSlug(article.Title)

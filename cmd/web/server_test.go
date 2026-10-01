@@ -42,6 +42,21 @@ func TestStaticAssetsAndHomeLayout(t *testing.T) {
 	}
 }
 
+func TestHeroKicker(t *testing.T) {
+	server, _ := testServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	server.ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	if !strings.Contains(body, `<p class="kicker">GAME DEVELOPMENT · SOFTWARE DEVELOPMENT</p>`) {
+		t.Errorf("hero kicker was not updated: %s", body)
+	}
+	if strings.Contains(body, "INDIE GAME DEV") {
+		t.Errorf("old hero kicker text is still present")
+	}
+}
+
 func TestHomeResponses(t *testing.T) {
 	tests := []struct {
 		name       string

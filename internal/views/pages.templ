@@ -125,9 +125,9 @@ templ ContactForm(values models.ContactSubmission, fieldErrors map[string]string
 					<option value={ values.Subject } selected>{ values.Subject }</option>
 				}
 				<option value="" selected?={ values.Subject == "" }>Choose a subject</option>
-				<option value="Game Dev" selected?={ values.Subject == "Game Dev" }>Game Dev</option>
+				<option value="Game Development" selected?={ values.Subject == "Game Development" }>Game Development</option>
+				<option value="Web Development" selected?={ values.Subject == "Web Development" }>Web Development</option>
 				<option value="Custom Software" selected?={ values.Subject == "Custom Software" }>Custom Software</option>
-				<option value="Automation" selected?={ values.Subject == "Automation" }>Automation</option>
 				<option value="Other" selected?={ values.Subject == "Other" }>Other</option>
 			</select>
 			if HasError(fieldErrors, "subject") {

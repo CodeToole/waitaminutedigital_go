@@ -1,22 +1,32 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"net/mail"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/CodeToole/waitaminutedigital_go/internal/db"
 	"github.com/CodeToole/waitaminutedigital_go/internal/models"
+	"github.com/CodeToole/waitaminutedigital_go/internal/notify"
+	"github.com/CodeToole/waitaminutedigital_go/internal/views"
 	"github.com/labstack/echo/v4"
 )
 
-func SubmitContact(siteURL string, database *sql.DB) echo.HandlerFunc {
+// notifyTimeout bounds how long the background notification goroutine may
+// run; context.WithTimeout cancels the HTTP call to ACS if it hangs so a
+// slow or unreachable email provider can never pile up goroutines.
+const notifyTimeout = 10 * time.Second
+
+func SubmitContact(site views.SiteConfig, database *sql.DB, notifier notify.Notifier) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var values models.ContactSubmission
 		if err := c.Bind(&values); err != nil {
-			return renderContact(c, siteURL, values, map[string]string{"form": "Please check the submitted form and try again."}, false, http.StatusBadRequest)
+			return renderContact(c, site, values, map[string]string{"form": "Please check the submitted form and try again."}, false, http.StatusBadRequest)
 		}
 
 		values.Name = strings.TrimSpace(values.Name)
@@ -26,12 +36,12 @@ func SubmitContact(siteURL string, database *sql.DB) echo.HandlerFunc {
 
 		// Quietly accept automated submissions without persisting them.
 		if strings.TrimSpace(values.Website) != "" {
-			return renderContact(c, siteURL, models.ContactSubmission{}, nil, true, http.StatusOK)
+			return renderContact(c, site, models.ContactSubmission{}, nil, true, http.StatusOK)
 		}
 
 		fieldErrors := validateContact(values)
 		if len(fieldErrors) > 0 {
-			return renderContact(c, siteURL, values, fieldErrors, false, http.StatusUnprocessableEntity)
+			return renderContact(c, site, values, fieldErrors, false, http.StatusUnprocessableEntity)
 		}
 
 		inquiry := models.Inquiry{
@@ -42,10 +52,32 @@ func SubmitContact(siteURL string, database *sql.DB) echo.HandlerFunc {
 		}
 		if err := db.CreateInquiry(c.Request().Context(), database, inquiry); err != nil {
 			c.Logger().Error(err)
-			return renderContact(c, siteURL, values, map[string]string{"form": "We could not send your message. Please try again."}, false, http.StatusInternalServerError)
+			return renderContact(c, site, values, map[string]string{"form": "We could not send your message. Please try again."}, false, http.StatusInternalServerError)
 		}
-		return renderContact(c, siteURL, models.ContactSubmission{}, nil, true, http.StatusOK)
+		notifyInquiry(notifier, site.SiteURL, inquiry)
+		return renderContact(c, site, models.ContactSubmission{}, nil, true, http.StatusOK)
 	}
+}
+
+// notifyInquiry sends the email in a goroutine so the HTTP response never
+// waits on (or fails because of) the notification provider. A goroutine is
+// a lightweight, independently scheduled function call managed by the Go
+// runtime, not the OS; "go f()" starts it and returns immediately.
+func notifyInquiry(notifier notify.Notifier, siteURL string, inquiry models.Inquiry) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
+		defer cancel()
+		notification := notify.InquiryNotification{
+			Name:     inquiry.Name,
+			Email:    inquiry.Email,
+			Subject:  inquiry.Subject,
+			Message:  inquiry.Message,
+			AdminURL: strings.TrimRight(siteURL, "/") + "/admin/inquiries",
+		}
+		if err := notifier.Notify(ctx, notification); err != nil {
+			log.Printf("notify inquiry: %v", err)
+		}
+	}()
 }
 
 func validateContact(values models.ContactSubmission) map[string]string {

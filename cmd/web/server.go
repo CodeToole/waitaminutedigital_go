@@ -7,6 +7,8 @@ import (
 
 	"github.com/CodeToole/waitaminutedigital_go/internal/auth"
 	"github.com/CodeToole/waitaminutedigital_go/internal/handlers"
+	"github.com/CodeToole/waitaminutedigital_go/internal/notify"
+	"github.com/CodeToole/waitaminutedigital_go/internal/views"
 	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,6 +18,8 @@ type serverOptions struct {
 	AdminPasswordHash string
 	Production        bool
 	UploadDir         string
+	ClarityID         string
+	Notifier          notify.Notifier
 }
 
 func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo.Echo {
@@ -26,12 +30,16 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 			settings.UploadDir = "./data/uploads"
 		}
 	}
+	if settings.Notifier == nil {
+		settings.Notifier = notify.NoopNotifier{}
+	}
+	site := views.SiteConfig{SiteURL: siteURL, Production: settings.Production, ClarityID: settings.ClarityID}
 
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.HTTPErrorHandler = handlers.NewHTTPErrorHandler(siteURL)
+	e.HTTPErrorHandler = handlers.NewHTTPErrorHandler(site)
 	sessions := scs.New()
 	sessions.Lifetime = 12 * time.Hour
 	sessions.Cookie.Name = "waitaminute_session"
@@ -44,21 +52,21 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	e.Static("/uploads", settings.UploadDir)
 	e.File("/favicon.ico", "static/favicon.ico")
 	e.File("/apple-touch-icon.png", "static/apple-touch-icon.png")
-	e.GET("/", handlers.NewHome(siteURL, database))
-	e.HEAD("/", headOnly(handlers.NewHome(siteURL, database)))
-	e.GET("/dispatches", handlers.NewDispatches(siteURL, database))
-	e.HEAD("/dispatches", headOnly(handlers.NewDispatches(siteURL, database)))
-	e.GET("/dispatches/:slug", handlers.NewArticle(siteURL, database))
-	e.HEAD("/dispatches/:slug", headOnly(handlers.NewArticle(siteURL, database)))
-	e.GET("/game-room", handlers.GameRoom(siteURL))
-	e.HEAD("/game-room", headOnly(handlers.GameRoom(siteURL)))
-	e.GET("/projects", handlers.Projects(siteURL))
-	e.HEAD("/projects", headOnly(handlers.Projects(siteURL)))
-	e.GET("/about", handlers.About(siteURL))
-	e.HEAD("/about", headOnly(handlers.About(siteURL)))
-	e.GET("/contact", handlers.Contact(siteURL))
-	e.HEAD("/contact", headOnly(handlers.Contact(siteURL)))
-	e.POST("/contact", handlers.SubmitContact(siteURL, database))
+	e.GET("/", handlers.NewHome(site, database))
+	e.HEAD("/", headOnly(handlers.NewHome(site, database)))
+	e.GET("/dispatches", handlers.NewDispatches(site, database))
+	e.HEAD("/dispatches", headOnly(handlers.NewDispatches(site, database)))
+	e.GET("/dispatches/:slug", handlers.NewArticle(site, database))
+	e.HEAD("/dispatches/:slug", headOnly(handlers.NewArticle(site, database)))
+	e.GET("/game-room", handlers.GameRoom(site))
+	e.HEAD("/game-room", headOnly(handlers.GameRoom(site)))
+	e.GET("/projects", handlers.Projects(site))
+	e.HEAD("/projects", headOnly(handlers.Projects(site)))
+	e.GET("/about", handlers.About(site))
+	e.HEAD("/about", headOnly(handlers.About(site)))
+	e.GET("/contact", handlers.Contact(site))
+	e.HEAD("/contact", headOnly(handlers.Contact(site)))
+	e.POST("/contact", handlers.SubmitContact(site, database, settings.Notifier))
 	e.GET("/health", handlers.Health)
 	e.HEAD("/health", headOnly(handlers.Health))
 
@@ -74,8 +82,8 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 		},
 	}))
 	loginLimiter := auth.NewLoginLimiter(settings.Production)
-	login := handlers.NewAdminLogin(siteURL, settings.AdminPasswordHash, sessions, loginLimiter)
-	adminHandlers := handlers.NewAdmin(siteURL, database, settings.UploadDir)
+	login := handlers.NewAdminLogin(site, settings.AdminPasswordHash, sessions, loginLimiter)
+	adminHandlers := handlers.NewAdmin(site, database, settings.UploadDir)
 	admin.GET("/login", login.Form)
 	admin.HEAD("/login", headOnly(login.Form))
 	admin.POST("/login", login.Submit)

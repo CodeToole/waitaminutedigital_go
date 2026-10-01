@@ -8,18 +8,19 @@ var ArticleCategories = [...]string{
 	"News",
 }
 
-var ContactSubjects = [...]string{"Game Dev", "Custom Software", "Automation", "Other"}
+var ContactSubjects = [...]string{"Game Development", "Web Development", "Custom Software", "Other"}
 
 type Article struct {
-	ID         int64
-	Title      string
-	Slug       string
-	Category   string
-	Summary    string
-	BodyMD     string
-	CoverImage string
-	Published  bool
-	CreatedAt  string
+	ID                int64
+	Title             string
+	Slug              string
+	Category          string
+	Summary           string
+	BodyMD            string
+	CoverImage        string
+	Published         bool
+	FeaturedHighlight bool
+	CreatedAt         string
 }
 
 type Highlight struct {

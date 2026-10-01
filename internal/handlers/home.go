@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewHome(siteURL string, database *sql.DB) echo.HandlerFunc {
+func NewHome(site views.SiteConfig, database *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		category := models.ResolveCategory(c.QueryParam("category"))
@@ -37,7 +37,7 @@ func NewHome(siteURL string, database *sql.DB) echo.HandlerFunc {
 		if path == "/" && category != "" {
 			canonicalPath += "?category=" + url.QueryEscape(models.CategorySlug(category))
 		}
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:         "Waitaminute Digital",
 			Description:   "Building games, tools, and software that solve real problems.",
 			Path:          path,

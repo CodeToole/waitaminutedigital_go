@@ -79,7 +79,8 @@ func ListPublishedArticlesPage(ctx context.Context, database *sql.DB, category s
 	}
 
 	query := `
-		SELECT id, title, slug, category, summary, body_md, cover_image, published, created_at
+		SELECT id, title, slug, category, summary, body_md, cover_image, published, created_at,
+		       EXISTS(SELECT 1 FROM highlight WHERE article_id = article.id)
 		FROM article
 		WHERE published = 1`
 	if category != "" {
@@ -96,7 +97,8 @@ func ListPublishedArticlesPage(ctx context.Context, database *sql.DB, category s
 
 func GetPublishedArticle(ctx context.Context, database *sql.DB, slug string) (models.Article, error) {
 	const query = `
-		SELECT id, title, slug, category, summary, body_md, cover_image, published, created_at
+		SELECT id, title, slug, category, summary, body_md, cover_image, published, created_at,
+		       EXISTS(SELECT 1 FROM highlight WHERE article_id = article.id)
 		FROM article
 		WHERE published = 1 AND slug = ?
 		LIMIT 1`
@@ -112,6 +114,7 @@ func GetPublishedArticle(ctx context.Context, database *sql.DB, slug string) (mo
 		&article.CoverImage,
 		&article.Published,
 		&article.CreatedAt,
+		&article.FeaturedHighlight,
 	)
 	if err != nil {
 		return models.Article{}, fmt.Errorf("get published article: %w", err)
@@ -148,6 +151,7 @@ func queryArticles(ctx context.Context, database *sql.DB, query string, args ...
 			&article.CoverImage,
 			&article.Published,
 			&article.CreatedAt,
+			&article.FeaturedHighlight,
 		); err != nil {
 			return nil, fmt.Errorf("scan published article: %w", err)
 		}

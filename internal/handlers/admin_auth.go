@@ -10,14 +10,14 @@ import (
 )
 
 type AdminLogin struct {
-	siteURL  string
+	site     views.SiteConfig
 	hash     string
 	sessions *scs.SessionManager
 	limiter  *auth.LoginLimiter
 }
 
-func NewAdminLogin(siteURL string, hash string, sessions *scs.SessionManager, limiter *auth.LoginLimiter) *AdminLogin {
-	return &AdminLogin{siteURL: siteURL, hash: hash, sessions: sessions, limiter: limiter}
+func NewAdminLogin(site views.SiteConfig, hash string, sessions *scs.SessionManager, limiter *auth.LoginLimiter) *AdminLogin {
+	return &AdminLogin{site: site, hash: hash, sessions: sessions, limiter: limiter}
 }
 
 func (login *AdminLogin) Form(c echo.Context) error {
@@ -51,7 +51,7 @@ func (login *AdminLogin) Submit(c echo.Context) error {
 }
 
 func (login *AdminLogin) render(c echo.Context, status int, message string) error {
-	meta := views.NewPageMeta(login.siteURL, views.PageMeta{
+	meta := views.NewPageMeta(login.site, views.PageMeta{
 		Title:       "Admin Login",
 		Description: "Sign in to manage Waitaminute Digital.",
 		Path:        "/admin/login",

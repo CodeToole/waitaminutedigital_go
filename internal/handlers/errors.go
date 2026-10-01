@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewHTTPErrorHandler(siteURL string) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(site views.SiteConfig) echo.HTTPErrorHandler {
 	return func(err error, c echo.Context) {
 		if c.Response().Committed {
 			return
@@ -40,7 +40,7 @@ func NewHTTPErrorHandler(siteURL string) echo.HTTPErrorHandler {
 			return
 		}
 
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       title,
 			Description: description,
 			Path:        c.Request().URL.Path,

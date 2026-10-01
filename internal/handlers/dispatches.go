@@ -15,7 +15,7 @@ import (
 
 const dispatchPageSize = 10
 
-func NewDispatches(siteURL string, database *sql.DB) echo.HandlerFunc {
+func NewDispatches(site views.SiteConfig, database *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		category := models.ResolveCategory(c.QueryParam("category"))
 		page, err := strconv.Atoi(c.QueryParam("page"))
@@ -42,7 +42,7 @@ func NewDispatches(siteURL string, database *sql.DB) echo.HandlerFunc {
 			)
 		}
 
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       "Dispatches",
 			Description: "Notes from the game desk: experiments, launches, and the mechanics behind the build.",
 			Path:        "/dispatches",
@@ -53,7 +53,7 @@ func NewDispatches(siteURL string, database *sql.DB) echo.HandlerFunc {
 	}
 }
 
-func NewArticle(siteURL string, database *sql.DB) echo.HandlerFunc {
+func NewArticle(site views.SiteConfig, database *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		article, err := db.GetPublishedArticle(c.Request().Context(), database, c.Param("slug"))
 		if errors.Is(err, sql.ErrNoRows) {
@@ -74,7 +74,7 @@ func NewArticle(siteURL string, database *sql.DB) echo.HandlerFunc {
 		if image == "" {
 			image = "/static/img/mascot_head.webp"
 		}
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       article.Title,
 			Description: article.Summary,
 			Path:        c.Request().URL.Path,

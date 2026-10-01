@@ -20,6 +20,9 @@ templ Layout(meta PageMeta) {
 			<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
 			<link rel="stylesheet" href="/static/css/site.css"/>
 			<script src="https://unpkg.com/htmx.org@2.0.8"></script>
+			if meta.ClarityID != "" {
+				@ClarityScript(meta.ClarityID)
+			}
 		</head>
 		<body>
 			<a class="skip" href="#main-content">Skip to content</a>

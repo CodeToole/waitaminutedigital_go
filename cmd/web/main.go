@@ -6,6 +6,7 @@ import (
 
 	"github.com/CodeToole/waitaminutedigital_go/internal/config"
 	"github.com/CodeToole/waitaminutedigital_go/internal/db"
+	"github.com/CodeToole/waitaminutedigital_go/internal/notify"
 )
 
 func main() {
@@ -22,12 +23,21 @@ func main() {
 		log.Fatalf("Create upload directory: %v", err)
 	}
 
+	var notifier notify.Notifier = notify.NoopNotifier{}
+	if cfg.ACSEndpoint != "" && cfg.ACSAccessKey != "" && cfg.NotifyFrom != "" {
+		notifier = notify.NewACSNotifier(cfg.ACSEndpoint, cfg.ACSAccessKey, cfg.NotifyFrom, cfg.NotifyTo)
+	} else {
+		log.Print("Inquiry email notifications disabled: set ACS_ENDPOINT, ACS_ACCESS_KEY, and NOTIFY_FROM to enable them")
+	}
+
 	addr := ":" + cfg.Port
 	log.Printf("Starting Waitaminute Digital server on %s", addr)
 	if err := newServer(cfg.SiteURL, database, serverOptions{
 		AdminPasswordHash: cfg.AdminPasswordHash,
 		Production:        cfg.Production,
 		UploadDir:         cfg.UploadDir,
+		ClarityID:         cfg.ClarityID,
+		Notifier:          notifier,
 	}).Start(addr); err != nil {
 		log.Fatalf("Server stopped: %v", err)
 	}

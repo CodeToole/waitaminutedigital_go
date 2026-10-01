@@ -44,5 +44,38 @@ func Migrate(ctx context.Context, database *sql.DB) error {
 	if _, err := database.ExecContext(ctx, string(schema)); err != nil {
 		return fmt.Errorf("apply database schema: %w", err)
 	}
+	rows, err := database.QueryContext(ctx, `PRAGMA table_info(highlight)`)
+	if err != nil {
+		return fmt.Errorf("inspect highlight schema: %w", err)
+	}
+	articleIDColumn := false
+	for rows.Next() {
+		var cid, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue sql.NullString
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+			rows.Close()
+			return fmt.Errorf("read highlight schema: %w", err)
+		}
+		if name == "article_id" {
+			articleIDColumn = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("iterate highlight schema: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close highlight schema: %w", err)
+	}
+	if !articleIDColumn {
+		migration, err := migrations.Files.ReadFile("002_highlight_article.sql")
+		if err != nil {
+			return fmt.Errorf("read highlight migration: %w", err)
+		}
+		if _, err := database.ExecContext(ctx, string(migration)); err != nil {
+			return fmt.Errorf("apply highlight migration: %w", err)
+		}
+	}
 	return nil
 }

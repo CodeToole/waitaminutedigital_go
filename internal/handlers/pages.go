@@ -8,9 +8,9 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func GameRoom(siteURL string) echo.HandlerFunc {
+func GameRoom(site views.SiteConfig) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       "Game Room",
 			Description: "A first Godot game is in development at Waitaminute Digital.",
 			Path:        "/game-room",
@@ -20,9 +20,9 @@ func GameRoom(siteURL string) echo.HandlerFunc {
 	}
 }
 
-func Projects(siteURL string) echo.HandlerFunc {
+func Projects(site views.SiteConfig) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       "Projects",
 			Description: "Software and tools built around real problems by Waitaminute Digital.",
 			Path:        "/projects",
@@ -32,9 +32,9 @@ func Projects(siteURL string) echo.HandlerFunc {
 	}
 }
 
-func About(siteURL string) echo.HandlerFunc {
+func About(site views.SiteConfig) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		meta := views.NewPageMeta(siteURL, views.PageMeta{
+		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       "About",
 			Description: "Meet Neil, the founder of Waitaminute Digital in Mobile, Alabama.",
 			Path:        "/about",
@@ -44,7 +44,7 @@ func About(siteURL string) echo.HandlerFunc {
 	}
 }
 
-func renderContact(c echo.Context, siteURL string, values models.ContactSubmission, fieldErrors map[string]string, success bool, status int) error {
+func renderContact(c echo.Context, site views.SiteConfig, values models.ContactSubmission, fieldErrors map[string]string, success bool, status int) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
 	c.Response().WriteHeader(status)
 	if c.Request().Header.Get("HX-Request") == "true" {
@@ -53,16 +53,16 @@ func renderContact(c echo.Context, siteURL string, values models.ContactSubmissi
 		}
 		return views.ContactForm(values, fieldErrors).Render(c.Request().Context(), c.Response())
 	}
-	meta := views.NewPageMeta(siteURL, views.PageMeta{
+	meta := views.NewPageMeta(site, views.PageMeta{
 		Title:       "Contact",
-		Description: "Get in touch with Waitaminute Digital about games, software, and automation.",
+		Description: "Get in touch with Waitaminute Digital about games, software, and web development.",
 		Path:        "/contact",
 	})
 	return views.ContactPage(meta, values, fieldErrors, success).Render(c.Request().Context(), c.Response())
 }
 
-func Contact(siteURL string) echo.HandlerFunc {
+func Contact(site views.SiteConfig) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return renderContact(c, siteURL, models.ContactSubmission{}, nil, false, http.StatusOK)
+		return renderContact(c, site, models.ContactSubmission{}, nil, false, http.StatusOK)
 	}
 }
