@@ -8,6 +8,8 @@ var ArticleCategories = [...]string{
 	"News",
 }
 
+var ContactSubjects = [...]string{"Game Dev", "Custom Software", "Automation", "Other"}
+
 type Article struct {
 	ID         int64
 	Title      string
@@ -41,6 +43,14 @@ type Inquiry struct {
 	Read      bool
 }
 
+type ContactSubmission struct {
+	Name    string `form:"name"`
+	Email   string `form:"email"`
+	Subject string `form:"subject"`
+	Message string `form:"message"`
+	Website string `form:"website"`
+}
+
 func CategorySlug(category string) string {
 	result := make([]rune, 0, len(category))
 	for _, char := range category {
@@ -63,4 +73,13 @@ func ResolveCategory(raw string) string {
 		}
 	}
 	return ""
+}
+
+func IsContactSubject(value string) bool {
+	for _, subject := range ContactSubjects {
+		if value == subject {
+			return true
+		}
+	}
+	return false
 }

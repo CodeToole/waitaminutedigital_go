@@ -21,6 +21,11 @@ func newServer(siteURL string, database *sql.DB) *echo.Echo {
 	e.GET("/", handlers.NewHome(siteURL, database))
 	e.GET("/dispatches", handlers.NewDispatches(siteURL, database))
 	e.GET("/dispatches/:slug", handlers.NewArticle(siteURL, database))
+	e.GET("/game-room", handlers.GameRoom(siteURL))
+	e.GET("/projects", handlers.Projects(siteURL))
+	e.GET("/about", handlers.About(siteURL))
+	e.GET("/contact", handlers.Contact(siteURL))
+	e.POST("/contact", handlers.SubmitContact(siteURL, database))
 	e.GET("/health", handlers.Health)
 
 	return e

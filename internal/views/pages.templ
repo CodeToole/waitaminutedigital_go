@@ -1,0 +1,145 @@
+package views
+
+import "github.com/CodeToole/waitaminutedigital_go/internal/models"
+
+templ GameRoomPage(meta PageMeta) {
+	@Layout(meta) {
+		<section class="game-room-page">
+			<div class="game-room-intro">
+				<p class="kicker">ARCADE · IN DEVELOPMENT</p>
+				<h1>Game Room</h1>
+				<p class="lede">First build loading…</p>
+				<p>My first Godot game is in development. I’m learning by building a small game one honest step at a time.</p>
+				<div class="game-progress" role="progressbar" aria-label="First Godot game development progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="64">
+					<span class="game-progress-fill"></span>
+				</div>
+				<span class="section-count">BUILD STATUS · WORK IN PROGRESS</span>
+			</div>
+			<div class="game-room-mascot">
+				<img src="/static/img/mascot.webp" alt="Digit, the Waitaminute Digital mascot" width="450" height="675" loading="lazy"/>
+			</div>
+			<section class="game-catalog" aria-labelledby="game-catalog-title">
+				<div class="section-head">
+					<h2 id="game-catalog-title">In Development</h2>
+					<span class="section-count">1 build</span>
+				</div>
+				@GameCard("First Godot Game", "Godot", "In development", "/contact")
+			</section>
+		</section>
+	}
+}
+
+templ GameCard(title string, engine string, status string, href string) {
+	<article class="card game-card">
+		<p class="tag">{ engine }</p>
+		<h3>{ title }</h3>
+		<p class="section-count">{ status }</p>
+		if href != "" {
+			<a href={ href }>Follow the build</a>
+		}
+	</article>
+}
+
+templ ProjectsPage(meta PageMeta) {
+	@Layout(meta) {
+		<section class="projects-page" aria-labelledby="projects-title">
+			<p class="kicker">BUILT AROUND REAL PROBLEMS</p>
+			<h1 id="projects-title">Projects</h1>
+			<div class="project-list">
+				<article class="card project-card">
+					<p class="tag">Flutter · Offline-first</p>
+					<h2>Bible Study App</h2>
+					<p>An offline-first study tool for deep expository scripture study, lesson outline parsing, interactive Podium Mode, and classroom syllabus PDFs.</p>
+				</article>
+				<article class="card project-card">
+					<p class="tag">Go · Echo · templ · HTMX</p>
+					<h2>Waitaminute Digital</h2>
+					<p>This website, rebuilt in Go with server-rendered pages and small HTMX interactions.</p>
+					<a href="https://github.com/CodeToole/waitaminutedigital_go" target="_blank" rel="noopener noreferrer">View the source on GitHub</a>
+				</article>
+			</div>
+		</section>
+	}
+}
+
+templ AboutPage(meta PageMeta) {
+	@Layout(meta) {
+		<article class="about-page">
+			<p class="kicker">A SMALL, PROBLEM-FIRST STUDIO</p>
+			<h1>About</h1>
+			<p class="lede">I’m Neil, founder of Waitaminute Digital in Mobile, Alabama. I’m originally from Buffalo, New York.</p>
+			<p>I’m a developer and indie game dev working in Godot, and I’m learning Go as I build this site. I like making games and practical software, but I try to begin with the customer’s problem rather than the technology.</p>
+			<p>This is a small independent studio. I’m still learning, testing ideas, and sharing what I can as the work takes shape.</p>
+		</article>
+	}
+}
+
+templ ContactPage(meta PageMeta, values models.ContactSubmission, fieldErrors map[string]string, success bool) {
+	@Layout(meta) {
+		<section class="contact-page" aria-labelledby="contact-title">
+			<p class="kicker">START WITH THE PROBLEM</p>
+			<h1 id="contact-title">Contact</h1>
+			<p class="lede">Tell me what you’re trying to make, fix, or automate.</p>
+			if success {
+				@ContactSuccess()
+			} else {
+				@ContactForm(values, fieldErrors)
+			}
+		</section>
+	}
+}
+
+templ ContactForm(values models.ContactSubmission, fieldErrors map[string]string) {
+	<div id="contact-form-container">
+		<form class="contact-form" method="post" action="/contact" hx-post="/contact" hx-target="#contact-form-container" hx-swap="outerHTML">
+			if ErrorFor(fieldErrors, "form") != "" {
+				<p class="form-error" role="alert">{ ErrorFor(fieldErrors, "form") }</p>
+			}
+			<label for="contact-name">Name</label>
+		<input id="contact-name" name="name" type="text" autocomplete="name" maxlength="100" required value={ values.Name } aria-invalid?={ HasError(fieldErrors, "name") } aria-describedby="contact-name-error"/>
+			if HasError(fieldErrors, "name") {
+				<p class="field-error" id="contact-name-error">{ ErrorFor(fieldErrors, "name") }</p>
+			}
+
+			<label for="contact-email">Email</label>
+			<input id="contact-email" name="email" type="email" autocomplete="email" maxlength="254" required value={ values.Email } aria-invalid?={ HasError(fieldErrors, "email") } aria-describedby="contact-email-error"/>
+			if HasError(fieldErrors, "email") {
+				<p class="field-error" id="contact-email-error">{ ErrorFor(fieldErrors, "email") }</p>
+			}
+
+			<label for="contact-subject">Subject</label>
+			<select id="contact-subject" name="subject" required aria-invalid?={ HasError(fieldErrors, "subject") } aria-describedby="contact-subject-error">
+				if values.Subject != "" && !models.IsContactSubject(values.Subject) {
+					<option value={ values.Subject } selected>{ values.Subject }</option>
+				}
+				<option value="" selected?={ values.Subject == "" }>Choose a subject</option>
+				<option value="Game Dev" selected?={ values.Subject == "Game Dev" }>Game Dev</option>
+				<option value="Custom Software" selected?={ values.Subject == "Custom Software" }>Custom Software</option>
+				<option value="Automation" selected?={ values.Subject == "Automation" }>Automation</option>
+				<option value="Other" selected?={ values.Subject == "Other" }>Other</option>
+			</select>
+			if HasError(fieldErrors, "subject") {
+				<p class="field-error" id="contact-subject-error">{ ErrorFor(fieldErrors, "subject") }</p>
+			}
+
+			<label for="contact-message">Message</label>
+			<textarea id="contact-message" name="message" rows="6" minlength="10" maxlength="5000" required aria-invalid?={ HasError(fieldErrors, "message") } aria-describedby="contact-message-error">{ values.Message }</textarea>
+			if HasError(fieldErrors, "message") {
+				<p class="field-error" id="contact-message-error">{ ErrorFor(fieldErrors, "message") }</p>
+			}
+
+			<div class="honeypot" aria-hidden="true">
+				<label for="contact-website">Leave this field empty</label>
+				<input id="contact-website" name="website" type="text" tabindex="-1" autocomplete="off"/>
+			</div>
+			<button class="btn btn-primary" type="submit">Send message</button>
+		</form>
+	</div>
+}
+
+templ ContactSuccess() {
+	<div class="contact-success" id="contact-form-container" role="status">
+		<h2>Thanks for reaching out.</h2>
+		<p>Your message is on its way. I’ll get back to you soon.</p>
+	</div>
+}

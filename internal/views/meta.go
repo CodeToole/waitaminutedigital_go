@@ -99,6 +99,14 @@ func FormatDate(value string) string {
 	return parsed.Format("02 Jan 2006")
 }
 
+func HasError(fieldErrors map[string]string, field string) bool {
+	return fieldErrors[field] != ""
+}
+
+func ErrorFor(fieldErrors map[string]string, field string) string {
+	return fieldErrors[field]
+}
+
 func absoluteURL(siteURL string, path string) string {
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		return path

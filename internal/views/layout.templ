@@ -55,7 +55,11 @@ templ Header(path string) {
 				@NavLink("Game Room", "/game-room", IsCurrent(path, "/game-room"))
 				@NavLink("Projects", "/projects", IsCurrent(path, "/projects"))
 				@NavLink("About", "/about", IsCurrent(path, "/about"))
-				<a class="btn-contact" href="/contact">Contact</a>
+				if IsCurrent(path, "/contact") {
+					<a class="btn-contact" href="/contact" aria-current="page">Contact</a>
+				} else {
+					<a class="btn-contact" href="/contact">Contact</a>
+				}
 			</nav>
 		</nav>
 	</header>

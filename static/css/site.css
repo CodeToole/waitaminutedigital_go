@@ -515,6 +515,101 @@ code { color: var(--purple); }
 }
 .error-fragment h2 { margin: 0; font-size: 1rem; }
 
+.game-room-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 1.5rem;
+}
+.game-room-intro h1,
+.projects-page h1,
+.about-page h1,
+.contact-page h1 { margin: 0.35rem 0 0.75rem; }
+.game-room-mascot img {
+    width: min(100%, 20rem);
+    max-height: 25rem;
+    object-fit: contain;
+    margin-inline: auto;
+}
+.game-progress {
+    width: min(100%, 34rem);
+    height: 1rem;
+    margin: 1.25rem 0 0.65rem;
+    overflow: hidden;
+    border: 1px solid var(--cyan);
+    border-radius: 3px;
+    background: #111116;
+}
+.game-progress-fill {
+    display: block;
+    width: 64%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple), var(--cyan));
+    animation: game-progress 3.5s ease-in-out infinite alternate;
+}
+@keyframes game-progress {
+    from { width: 18%; }
+    to { width: 94%; }
+}
+.game-catalog { grid-column: 1 / -1; }
+.game-card,
+.project-card { max-width: 52rem; }
+.project-list { display: grid; gap: 1rem; }
+.project-card h2,
+.game-card h3 { margin: 0.35rem 0 0.75rem; }
+.about-page { max-width: 48rem; }
+.about-page p:not(.kicker) { max-width: 44rem; }
+.contact-page { max-width: 44rem; }
+.contact-form {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 1.5rem;
+}
+.contact-form label { color: var(--muted); }
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+}
+.contact-form textarea { min-height: 10rem; resize: vertical; }
+.contact-form input:focus-visible,
+.contact-form select:focus-visible,
+.contact-form textarea:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+.contact-form [aria-invalid="true"] { border-color: #f87171; }
+.contact-form .btn { margin-top: 0.65rem; cursor: pointer; }
+.field-error,
+.form-error { margin: 0 0 0.55rem; color: #fca5a5; }
+.honeypot {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+.contact-success {
+    margin-top: 1.5rem;
+    padding: 1rem 0;
+    border-top: 2px solid var(--cyan);
+}
+.contact-success h2 { margin: 0 0 0.5rem; }
+
+@media (min-width: 48rem) {
+    .game-room-page { grid-template-columns: minmax(0, 1.3fr) minmax(14rem, 0.7fr); }
+    .project-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .game-progress-fill { width: 64%; animation: none; }
+}
+
 @media (min-width: 48rem) {
     .error-page { grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 1.3fr); }
 }

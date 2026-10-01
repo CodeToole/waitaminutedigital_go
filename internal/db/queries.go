@@ -119,6 +119,16 @@ func GetPublishedArticle(ctx context.Context, database *sql.DB, slug string) (mo
 	return article, nil
 }
 
+func CreateInquiry(ctx context.Context, database *sql.DB, inquiry models.Inquiry) error {
+	const query = `
+		INSERT INTO inquiry (name, email, subject, message)
+		VALUES (?, ?, ?, ?)`
+	if _, err := database.ExecContext(ctx, query, inquiry.Name, inquiry.Email, inquiry.Subject, inquiry.Message); err != nil {
+		return fmt.Errorf("create inquiry: %w", err)
+	}
+	return nil
+}
+
 func queryArticles(ctx context.Context, database *sql.DB, query string, args ...any) ([]models.Article, error) {
 	rows, err := database.QueryContext(ctx, query, args...)
 	if err != nil {
