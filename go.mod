@@ -4,9 +4,11 @@ go 1.27.0
 
 require (
 	github.com/a-h/templ v0.3.1020
+	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/labstack/echo/v4 v4.16.0
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/yuin/goldmark v1.8.6
+	golang.org/x/crypto v0.53.0
 	modernc.org/sqlite v1.60.1
 )
 
@@ -22,7 +24,6 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.40.0 // indirect

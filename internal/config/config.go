@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 )
 
 // Config holds all runtime configuration settings for the web application.
@@ -14,6 +15,8 @@ type Config struct {
 	SiteURL           string
 	AdminPasswordHash string
 	SessionSecret     string
+	Production        bool
+	UploadDir         string
 }
 
 // Load reads configuration from environment variables, supplying safe local defaults.
@@ -26,6 +29,11 @@ func Load() (Config, error) {
 	siteURL := os.Getenv("SITE_URL")
 	if siteURL == "" {
 		siteURL = "https://waitaminutedigital.com"
+	}
+	production := strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production")
+	uploadDir := "./data/uploads"
+	if production {
+		uploadDir = "/home/data/uploads"
 	}
 
 	siteDB := os.Getenv("SITE_DB")
@@ -46,5 +54,7 @@ func Load() (Config, error) {
 		SiteURL:           siteURL,
 		AdminPasswordHash: os.Getenv("ADMIN_PASSWORD_HASH"),
 		SessionSecret:     os.Getenv("SESSION_SECRET"),
+		Production:        production,
+		UploadDir:         uploadDir,
 	}, nil
 }

@@ -65,6 +65,36 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 	}
 }
 
+func TestHEADPublicRoutesReturnStatusWithoutBody(t *testing.T) {
+	tests := []struct {
+		path       string
+		wantStatus int
+	}{
+		{path: "/", wantStatus: http.StatusOK},
+		{path: "/dispatches/missing", wantStatus: http.StatusNotFound},
+		{path: "/dispatches", wantStatus: http.StatusOK},
+		{path: "/game-room", wantStatus: http.StatusOK},
+		{path: "/projects", wantStatus: http.StatusOK},
+		{path: "/about", wantStatus: http.StatusOK},
+		{path: "/contact", wantStatus: http.StatusOK},
+		{path: "/health", wantStatus: http.StatusOK},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			server, _ := testServer(t)
+			req := httptest.NewRequest(http.MethodHead, tc.path, nil)
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.wantStatus)
+			}
+			if rec.Body.Len() != 0 {
+				t.Errorf("HEAD body length = %d, want 0", rec.Body.Len())
+			}
+		})
+	}
+}
+
 func TestContactValidationPreservesInput(t *testing.T) {
 	tests := []struct {
 		name       string

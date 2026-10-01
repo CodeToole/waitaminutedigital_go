@@ -1,0 +1,218 @@
+package views
+
+import "github.com/CodeToole/waitaminutedigital_go/internal/models"
+
+templ AdminDispatchesPage(meta PageMeta, csrf string, articles []models.Article, unread int) {
+	@Layout(meta) {
+		<section class="admin-shell" aria-labelledby="admin-title">
+			@AdminHeader("dispatches", csrf, unread)
+			<div class="admin-panel">
+				<div class="section-head">
+					<h2>Dispatches</h2>
+					<a class="btn btn-primary" href="/admin/dispatches/new">New dispatch</a>
+				</div>
+				@AdminArticleList(articles, csrf)
+			</div>
+		</section>
+	}
+}
+
+templ AdminArticleFormPage(meta PageMeta, csrf string, article models.Article, isNew bool, errorMessage string) {
+	@Layout(meta) {
+		<section class="admin-shell" aria-labelledby="admin-article-title">
+			@AdminHeader("dispatches", csrf, 0)
+			<div class="admin-panel">
+				if isNew {
+					<h1 id="admin-article-title">New dispatch</h1>
+				} else {
+					<h1 id="admin-article-title">Edit dispatch</h1>
+				}
+				if errorMessage != "" {
+					<p class="admin-message error" role="alert">{ errorMessage }</p>
+				}
+				<form class="admin-form" method="post" enctype="multipart/form-data" action={ ArticleFormAction(article.ID, isNew) }>
+					<input type="hidden" name="_csrf" value={ csrf }/>
+					<label for="article-title">Title</label>
+					<input id="article-title" name="title" type="text" value={ article.Title } required/>
+					<label for="article-slug">Slug</label>
+					<input id="article-slug" name="slug" type="text" value={ article.Slug } required/>
+					<label for="article-category">Category</label>
+					<select id="article-category" name="category" required>
+						for _, category := range models.ArticleCategories {
+							<option value={ category } selected?={ article.Category == category }>{ category }</option>
+						}
+					</select>
+					<label for="article-summary">Summary</label>
+					<textarea id="article-summary" name="summary" rows="3">{ article.Summary }</textarea>
+					<label for="article-cover">Cover image (PNG, JPG, WebP; max 5MB)</label>
+					<input id="article-cover" name="cover_image" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"/>
+					if article.CoverImage != "" {
+						<p class="section-count">Current cover: { article.CoverImage }</p>
+					}
+					<label for="article-body">Body (Markdown)</label>
+					<textarea id="article-body" name="body_md" rows="14" hx-post="/admin/preview" hx-trigger="input changed delay:500ms" hx-target="#markdown-preview" hx-swap="innerHTML" hx-include="closest form">{ article.BodyMD }</textarea>
+					<div class="admin-preview-wrap">
+						<p class="section-count">Live preview</p>
+						<div class="card article-body" id="markdown-preview">Start typing to preview.</div>
+					</div>
+					<label class="admin-publish"><input type="checkbox" name="published" value="on" checked?={ article.Published }/> Publish</label>
+					<div class="admin-actions">
+						<button class="btn btn-primary" type="submit">Save dispatch</button>
+						<a class="btn btn-ghost" href="/admin/dispatches">Cancel</a>
+					</div>
+				</form>
+			</div>
+		</section>
+		<script src="/static/js/admin.js" defer></script>
+	}
+}
+
+templ AdminArticleList(articles []models.Article, csrf string) {
+	<div class="admin-list" id="admin-articles">
+		if len(articles) == 0 {
+			<p class="card empty">No dispatches yet.</p>
+		}
+		for _, article := range articles {
+			<article class="admin-item card">
+				<div class="admin-row-header">
+					<span class="tag">{ article.Category }</span>
+					<span class={ AdminStatusClass(article.Published) }>{ AdminStatus(article.Published) }</span>
+				</div>
+				<h3>{ article.Title }</h3>
+				<p class="section-count">/{ article.Slug }</p>
+				<div class="admin-actions">
+					<a class="btn btn-ghost btn-small" href={ "/admin/dispatches/" + FormatID(article.ID) + "/edit" }>Edit</a>
+					<form class="inline-form" method="post" action={ "/admin/dispatches/" + FormatID(article.ID) + "/publish" } hx-post={ "/admin/dispatches/" + FormatID(article.ID) + "/publish" } hx-target="#admin-articles" hx-swap="outerHTML">
+						<input type="hidden" name="_csrf" value={ csrf }/>
+						<button class="btn btn-ghost btn-small" type="submit">{ AdminToggleLabel(article.Published) }</button>
+					</form>
+					<form class="inline-form" method="post" action={ "/admin/dispatches/" + FormatID(article.ID) + "/delete" }>
+						<input type="hidden" name="_csrf" value={ csrf }/>
+						<button class="btn btn-ghost btn-small" type="submit" hx-confirm="Delete this dispatch?">Delete</button>
+					</form>
+				</div>
+			</article>
+		}
+	</div>
+}
+
+templ AdminHighlightsPage(meta PageMeta, csrf string, highlights []models.Highlight, editing models.Highlight, isNew bool, errorMessage string, unread int) {
+	@Layout(meta) {
+		<section class="admin-shell" aria-labelledby="admin-title">
+			@AdminHeader("highlights", csrf, unread)
+			<div class="admin-panel">
+				<div class="section-head"><h2>Highlights</h2><a class="btn btn-primary" href="/admin/highlights/new">New highlight</a></div>
+			if isNew || editing.ID != 0 {
+				if errorMessage != "" {
+					<p class="admin-message error" role="alert">{ errorMessage }</p>
+				}
+				@AdminHighlightForm(editing, isNew, csrf)
+			}
+			@AdminHighlightList(highlights, csrf)
+		</div>
+		</section>
+	}
+}
+
+templ AdminHighlightForm(highlight models.Highlight, isNew bool, csrf string) {
+	<form class="admin-form" method="post" action={ HighlightFormAction(highlight.ID, isNew) }>
+		<input type="hidden" name="_csrf" value={ csrf }/>
+		<label for="highlight-title">Title</label><input id="highlight-title" name="title" type="text" value={ highlight.Title } required/>
+		<label for="highlight-kicker">Kicker</label><input id="highlight-kicker" name="kicker" type="text" value={ highlight.Kicker }/>
+		<label for="highlight-summary">Summary</label><textarea id="highlight-summary" name="summary" rows="3">{ highlight.Summary }</textarea>
+		<label for="highlight-href">Link</label><input id="highlight-href" name="href" type="text" value={ highlight.Href }/>
+		<label for="highlight-image">Image URL</label><input id="highlight-image" name="image" type="text" value={ highlight.Image }/>
+		<label for="highlight-sort">Sort order</label><input id="highlight-sort" name="sort_order" type="number" min="0" value={ FormatID(int64(highlight.SortOrder)) }/>
+		<label class="admin-publish"><input type="checkbox" name="published" value="on" checked?={ highlight.Published }/> Publish</label>
+		<button class="btn btn-primary" type="submit">Save highlight</button>
+	</form>
+}
+
+templ AdminHighlightList(highlights []models.Highlight, csrf string) {
+	<div class="admin-list">
+		if len(highlights) == 0 {
+			<p class="card empty">No highlights yet.</p>
+		}
+		for _, highlight := range highlights {
+			<article class="admin-item card">
+				<div class="admin-row-header"><span class="tag">{ highlight.Kicker }</span><span class="section-count">Sort { highlight.SortOrder }</span></div>
+				<h3>{ highlight.Title }</h3><p>{ highlight.Summary }</p>
+				<div class="admin-actions">
+					<a class="btn btn-ghost btn-small" href={ "/admin/highlights/" + FormatID(highlight.ID) + "/edit" }>Edit</a>
+					<form class="inline-form" method="post" action={ "/admin/highlights/" + FormatID(highlight.ID) + "/publish" }>
+						<input type="hidden" name="_csrf" value={ csrf }/>
+						<button class="btn btn-ghost btn-small" type="submit">{ AdminToggleLabel(highlight.Published) }</button>
+					</form>
+					<form class="inline-form" method="post" action={ "/admin/highlights/" + FormatID(highlight.ID) + "/delete" }>
+						<input type="hidden" name="_csrf" value={ csrf }/>
+						<button class="btn btn-ghost btn-small" type="submit" hx-confirm="Delete this highlight?">Delete</button>
+					</form>
+				</div>
+			</article>
+		}
+	</div>
+}
+
+templ AdminInquiriesPage(meta PageMeta, csrf string, inquiries []models.Inquiry, unread int) {
+	@Layout(meta) {
+		<section class="admin-shell" aria-labelledby="admin-title">
+			@AdminHeader("inquiries", csrf, unread)
+			<div class="admin-panel">
+				<div class="section-head"><h2>Inquiries</h2><span class="section-count">{ unread } unread</span></div>
+			<div class="admin-list">
+				if len(inquiries) == 0 {
+					<p class="card empty">No inquiries yet.</p>
+				}
+				for _, inquiry := range inquiries {
+					<article class="admin-item card">
+						<div class="admin-row-header"><span class={ AdminReadClass(inquiry.Read) }>{ AdminReadLabel(inquiry.Read) }</span><span class="section-count">{ FormatDate(inquiry.CreatedAt) }</span></div>
+						<h3>{ inquiry.Name } · { inquiry.Subject }</h3><p><a href={ "mailto:" + inquiry.Email }>{ inquiry.Email }</a></p><p>{ inquiry.Message }</p>
+						<div class="admin-actions">
+							<form class="inline-form" method="post" action={ "/admin/inquiries/" + FormatID(inquiry.ID) + "/read" }>
+								<input type="hidden" name="_csrf" value={ csrf }/>
+								<button class="btn btn-ghost btn-small" type="submit">{ InquiryToggleLabel(inquiry.Read) }</button>
+							</form>
+							<form class="inline-form" method="post" action={ "/admin/inquiries/" + FormatID(inquiry.ID) + "/delete" }>
+								<input type="hidden" name="_csrf" value={ csrf }/>
+								<button class="btn btn-ghost btn-small" type="submit" hx-confirm="Delete this inquiry?">Delete</button>
+							</form>
+						</div>
+					</article>
+				}
+			</div>
+		</div>
+		</section>
+	}
+}
+
+templ AdminHeader(tab string, csrf string, unread int) {
+	<div class="admin-header">
+		<div><p class="kicker">WAITAMINUTE DIGITAL</p><h1 id="admin-title">Admin</h1></div>
+		<form method="post" action="/admin/logout"><input type="hidden" name="_csrf" value={ csrf }/><button class="btn btn-ghost" type="submit">Sign out</button></form>
+	</div>
+	<nav class="admin-tabs" aria-label="Admin sections">
+		@AdminTab("Dispatches", "/admin/dispatches", "dispatches", tab, 0)
+		@AdminTab("Highlights", "/admin/highlights", "highlights", tab, 0)
+		@AdminTab("Inquiries", "/admin/inquiries", "inquiries", tab, unread)
+	</nav>
+}
+
+templ AdminTab(label string, href string, key string, active string, count int) {
+	if key == active {
+		<a class="admin-tab is-active" href={ href } aria-current="page">{ label }@UnreadBadge(count)</a>
+	} else {
+		<a class="admin-tab" href={ href }>{ label }@UnreadBadge(count)</a>
+	}
+}
+
+templ UnreadBadge(count int) {
+	if count > 0 {
+		<span class="tab-count">{ count }</span>
+	}
+}
+
+templ AdminMarkdownPreview(body templ.Component) {
+	<div class="article-body">
+		@body
+	</div>
+}

@@ -23,7 +23,7 @@ templ GameRoomPage(meta PageMeta) {
 					<h2 id="game-catalog-title">In Development</h2>
 					<span class="section-count">1 build</span>
 				</div>
-				@GameCard("First Godot Game", "Godot", "In development", "/contact")
+				@GameCard("First Godot Game", "Godot", "In development", "/dispatches?category=game-room")
 			</section>
 		</section>
 	}
@@ -50,6 +50,7 @@ templ ProjectsPage(meta PageMeta) {
 					<p class="tag">Flutter · Offline-first</p>
 					<h2>Bible Study App</h2>
 					<p>An offline-first study tool for deep expository scripture study, lesson outline parsing, interactive Podium Mode, and classroom syllabus PDFs.</p>
+					<a href="/dispatches/building-an-expository-teaching-engine-bible-study-app">Read the write-up</a>
 				</article>
 				<article class="card project-card">
 					<p class="tag">Go · Echo · templ · HTMX</p>
@@ -65,11 +66,22 @@ templ ProjectsPage(meta PageMeta) {
 templ AboutPage(meta PageMeta) {
 	@Layout(meta) {
 		<article class="about-page">
-			<p class="kicker">A SMALL, PROBLEM-FIRST STUDIO</p>
-			<h1>About</h1>
-			<p class="lede">I’m Neil, founder of Waitaminute Digital in Mobile, Alabama. I’m originally from Buffalo, New York.</p>
-			<p>I’m a developer and indie game dev working in Godot, and I’m learning Go as I build this site. I like making games and practical software, but I try to begin with the customer’s problem rather than the technology.</p>
-			<p>This is a small independent studio. I’m still learning, testing ideas, and sharing what I can as the work takes shape.</p>
+			<div class="about-copy">
+				<p class="kicker">A SMALL, PROBLEM-FIRST STUDIO</p>
+				<h1>About</h1>
+				<p class="lede">I’m Neil, founder of Waitaminute Digital in Mobile, Alabama. I’m originally from Buffalo, New York.</p>
+				<p>I’m a developer and indie game dev working in Godot, and I’m learning Go as I build this site. I like making games and practical software, but I try to begin with the customer’s problem rather than the technology.</p>
+				<p>This is a small independent studio. I’m still learning, testing ideas, and sharing what I can as the work takes shape.</p>
+				<div class="about-actions">
+					<a class="btn btn-primary" href="/contact">Contact</a>
+					<a class="btn btn-ghost" href="https://github.com/CodeToole" target="_blank" rel="noopener noreferrer">GitHub</a>
+					<a class="btn btn-ghost" href="https://www.linkedin.com/in/corneliustoole/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+				</div>
+			</div>
+			<picture class="about-mascot">
+				<source srcset="/static/img/mascot_head.webp" type="image/webp"/>
+				<img src="/static/img/mascot_head.png" alt="Digit, the Waitaminute Digital mascot" width="480" height="480" loading="lazy"/>
+			</picture>
 		</article>
 	}
 }

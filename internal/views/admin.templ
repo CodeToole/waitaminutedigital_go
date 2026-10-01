@@ -1,0 +1,19 @@
+package views
+
+templ AdminLoginPage(meta PageMeta, csrfToken string, errorMessage string) {
+	@Layout(meta) {
+		<section class="admin-login" aria-labelledby="admin-login-title">
+			<p class="kicker">PRIVATE AREA</p>
+			<h1 id="admin-login-title">Admin login</h1>
+			if errorMessage != "" {
+				<p class="admin-message error" role="alert">{ errorMessage }</p>
+			}
+			<form class="contact-form admin-login-form" method="post" action="/admin/login">
+				<input type="hidden" name="_csrf" value={ csrfToken }/>
+				<label for="admin-password">Password</label>
+				<input id="admin-password" name="password" type="password" autocomplete="current-password" required/>
+				<button class="btn btn-primary" type="submit">Sign in</button>
+			</form>
+		</section>
+	}
+}

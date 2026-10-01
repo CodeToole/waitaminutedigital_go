@@ -91,6 +91,66 @@ func LinkedInShareURL(pageURL string) string {
 	return "https://www.linkedin.com/sharing/share-offsite/?url=" + url.QueryEscape(pageURL)
 }
 
+func FormatID(id int64) string {
+	return strconv.FormatInt(id, 10)
+}
+
+func ArticleFormAction(id int64, isNew bool) string {
+	if isNew {
+		return "/admin/dispatches"
+	}
+	return "/admin/dispatches/" + FormatID(id)
+}
+
+func HighlightFormAction(id int64, isNew bool) string {
+	if isNew {
+		return "/admin/highlights"
+	}
+	return "/admin/highlights/" + FormatID(id)
+}
+
+func AdminStatus(published bool) string {
+	if published {
+		return "Published"
+	}
+	return "Draft"
+}
+
+func AdminStatusClass(published bool) string {
+	if published {
+		return "status-pill"
+	}
+	return "status-pill draft"
+}
+
+func AdminToggleLabel(published bool) string {
+	if published {
+		return "Move to draft"
+	}
+	return "Publish"
+}
+
+func AdminReadLabel(read bool) string {
+	if read {
+		return "Read"
+	}
+	return "Unread"
+}
+
+func AdminReadClass(read bool) string {
+	if read {
+		return "status-pill"
+	}
+	return "status-pill draft"
+}
+
+func InquiryToggleLabel(read bool) string {
+	if read {
+		return "Mark unread"
+	}
+	return "Mark read"
+}
+
 func FormatDate(value string) string {
 	parsed, err := time.Parse(time.RFC3339Nano, value)
 	if err != nil {

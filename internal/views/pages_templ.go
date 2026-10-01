@@ -47,7 +47,7 @@ func GameRoomPage(meta PageMeta) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = GameCard("First Godot Game", "Godot", "In development", "/contact").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = GameCard("First Godot Game", "Godot", "In development", "/dispatches?category=game-room").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -189,7 +189,7 @@ func ProjectsPage(meta PageMeta) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<section class=\"projects-page\" aria-labelledby=\"projects-title\"><p class=\"kicker\">BUILT AROUND REAL PROBLEMS</p><h1 id=\"projects-title\">Projects</h1><div class=\"project-list\"><article class=\"card project-card\"><p class=\"tag\">Flutter · Offline-first</p><h2>Bible Study App</h2><p>An offline-first study tool for deep expository scripture study, lesson outline parsing, interactive Podium Mode, and classroom syllabus PDFs.</p></article><article class=\"card project-card\"><p class=\"tag\">Go · Echo · templ · HTMX</p><h2>Waitaminute Digital</h2><p>This website, rebuilt in Go with server-rendered pages and small HTMX interactions.</p><a href=\"https://github.com/CodeToole/waitaminutedigital_go\" target=\"_blank\" rel=\"noopener noreferrer\">View the source on GitHub</a></article></div></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<section class=\"projects-page\" aria-labelledby=\"projects-title\"><p class=\"kicker\">BUILT AROUND REAL PROBLEMS</p><h1 id=\"projects-title\">Projects</h1><div class=\"project-list\"><article class=\"card project-card\"><p class=\"tag\">Flutter · Offline-first</p><h2>Bible Study App</h2><p>An offline-first study tool for deep expository scripture study, lesson outline parsing, interactive Podium Mode, and classroom syllabus PDFs.</p><a href=\"/dispatches/building-an-expository-teaching-engine-bible-study-app\">Read the write-up</a></article><article class=\"card project-card\"><p class=\"tag\">Go · Echo · templ · HTMX</p><h2>Waitaminute Digital</h2><p>This website, rebuilt in Go with server-rendered pages and small HTMX interactions.</p><a href=\"https://github.com/CodeToole/waitaminutedigital_go\" target=\"_blank\" rel=\"noopener noreferrer\">View the source on GitHub</a></article></div></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -236,7 +236,7 @@ func AboutPage(meta PageMeta) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<article class=\"about-page\"><p class=\"kicker\">A SMALL, PROBLEM-FIRST STUDIO</p><h1>About</h1><p class=\"lede\">I’m Neil, founder of Waitaminute Digital in Mobile, Alabama. I’m originally from Buffalo, New York.</p><p>I’m a developer and indie game dev working in Godot, and I’m learning Go as I build this site. I like making games and practical software, but I try to begin with the customer’s problem rather than the technology.</p><p>This is a small independent studio. I’m still learning, testing ideas, and sharing what I can as the work takes shape.</p></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<article class=\"about-page\"><div class=\"about-copy\"><p class=\"kicker\">A SMALL, PROBLEM-FIRST STUDIO</p><h1>About</h1><p class=\"lede\">I’m Neil, founder of Waitaminute Digital in Mobile, Alabama. I’m originally from Buffalo, New York.</p><p>I’m a developer and indie game dev working in Godot, and I’m learning Go as I build this site. I like making games and practical software, but I try to begin with the customer’s problem rather than the technology.</p><p>This is a small independent studio. I’m still learning, testing ideas, and sharing what I can as the work takes shape.</p><div class=\"about-actions\"><a class=\"btn btn-primary\" href=\"/contact\">Contact</a> <a class=\"btn btn-ghost\" href=\"https://github.com/CodeToole\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a> <a class=\"btn btn-ghost\" href=\"https://www.linkedin.com/in/corneliustoole/\" target=\"_blank\" rel=\"noopener noreferrer\">LinkedIn</a></div></div><picture class=\"about-mascot\"><source srcset=\"/static/img/mascot_head.webp\" type=\"image/webp\"> <img src=\"/static/img/mascot_head.png\" alt=\"Digit, the Waitaminute Digital mascot\" width=\"480\" height=\"480\" loading=\"lazy\"></picture></article>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -345,7 +345,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(ErrorFor(fieldErrors, "form"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 96, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 108, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -363,7 +363,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(values.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 99, Col: 115}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 111, Col: 115}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 		if templ_7745c5c3_Err != nil {
@@ -391,7 +391,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(ErrorFor(fieldErrors, "name"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 101, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 113, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -409,7 +409,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(values.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 105, Col: 121}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 117, Col: 121}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
@@ -437,7 +437,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(ErrorFor(fieldErrors, "email"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 107, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 119, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -470,7 +470,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(values.Subject)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 113, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 125, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 			if templ_7745c5c3_Err != nil {
@@ -483,7 +483,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(values.Subject)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 113, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 125, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -556,7 +556,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(ErrorFor(fieldErrors, "subject"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 122, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 134, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -584,7 +584,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(values.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 126, Col: 207}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 138, Col: 207}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -602,7 +602,7 @@ func ContactForm(values models.ContactSubmission, fieldErrors map[string]string)
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(ErrorFor(fieldErrors, "message"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 128, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages.templ`, Line: 140, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {

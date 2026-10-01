@@ -128,7 +128,7 @@ func TestHomeResponses(t *testing.T) {
 	}
 }
 
-func testServer(t *testing.T) (*echo.Echo, *sql.DB) {
+func testServer(t *testing.T, options ...serverOptions) (*echo.Echo, *sql.DB) {
 	t.Helper()
 	t.Chdir(filepath.Join("..", ".."))
 	database, err := appdb.Open(filepath.Join(t.TempDir(), "site.db"))
@@ -137,7 +137,7 @@ func testServer(t *testing.T) (*echo.Echo, *sql.DB) {
 	}
 	t.Cleanup(func() { _ = database.Close() })
 
-	server := newServer("https://waitaminutedigital.com", database)
+	server := newServer("https://waitaminutedigital.com", database, options...)
 	return server, database
 }
 
