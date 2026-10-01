@@ -73,7 +73,7 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 			return echo.NewHTTPError(http.StatusForbidden, "Invalid or missing CSRF token")
 		},
 	}))
-	loginLimiter := auth.NewLoginLimiter()
+	loginLimiter := auth.NewLoginLimiter(settings.Production)
 	login := handlers.NewAdminLogin(siteURL, settings.AdminPasswordHash, sessions, loginLimiter)
 	adminHandlers := handlers.NewAdmin(siteURL, database, settings.UploadDir)
 	admin.GET("/login", login.Form)

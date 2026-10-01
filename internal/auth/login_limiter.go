@@ -6,18 +6,24 @@ import (
 )
 
 const (
-	maxLoginFailures = 5
-	loginWindow      = 15 * time.Minute
+	maxLoginFailures  = 5
+	developmentWindow = time.Minute
+	productionWindow  = 15 * time.Minute
 )
 
 type LoginLimiter struct {
 	mu       sync.Mutex
 	failures map[string][]time.Time
 	now      func() time.Time
+	window   time.Duration
 }
 
-func NewLoginLimiter() *LoginLimiter {
-	return &LoginLimiter{failures: make(map[string][]time.Time), now: time.Now}
+func NewLoginLimiter(production bool) *LoginLimiter {
+	window := developmentWindow
+	if production {
+		window = productionWindow
+	}
+	return &LoginLimiter{failures: make(map[string][]time.Time), now: time.Now, window: window}
 }
 
 func (limiter *LoginLimiter) Allowed(ip string) bool {
@@ -40,7 +46,7 @@ func (limiter *LoginLimiter) Reset(ip string) {
 }
 
 func (limiter *LoginLimiter) activeFailures(ip string) []time.Time {
-	cutoff := limiter.now().Add(-loginWindow)
+	cutoff := limiter.now().Add(-limiter.window)
 	active := limiter.failures[ip][:0]
 	for _, failure := range limiter.failures[ip] {
 		if !failure.Before(cutoff) {
