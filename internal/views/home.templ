@@ -1,10 +1,144 @@
 package views
 
-templ Home() {
-	@Layout("Waitaminute Digital", "home") {
-		<section class="wrap" id="home">
-			<p class="kicker">Independent digital studio</p>
-			<h1>Waitaminute Digital</h1>
-		</section>
+import "github.com/CodeToole/waitaminutedigital_go/internal/models"
+
+templ Home(meta PageMeta, highlights []models.Highlight, articles []models.Article, category string) {
+	@Layout(meta) {
+		@Hero()
+		@HighlightsSection(highlights)
+		@DispatchesSection(category, articles)
 	}
+}
+
+templ Hero() {
+	<section class="hero">
+		<div class="hero-copy">
+			<p class="kicker">INDIE GAME DEV · PYTHON · GO · PROBLEM-FIRST SOFTWARE</p>
+			<h1>Building games, tools, and software that solve real problems.</h1>
+			<p class="lede">Small games, sharp tools, and write-ups of what actually shipped.</p>
+			<div class="hero-actions">
+				<a class="btn btn-primary" href="/dispatches">Read the Dispatches</a>
+				<a class="btn btn-ghost" href="/game-room">Enter the Game Room</a>
+			</div>
+		</div>
+		<div class="card mascot-card">
+			<p class="status">STATUS: ACTIVE</p>
+			<picture>
+				<source srcset="/static/img/mascot.webp" type="image/webp"/>
+				<img src="/static/img/mascot.png" alt="Digit, a purple and black robot with a cyan face" width="900" height="1350" fetchpriority="high"/>
+			</picture>
+		</div>
+	</section>
+}
+
+templ HighlightsSection(highlights []models.Highlight) {
+	<section aria-labelledby="featured-highlights-title">
+		<div class="section-head">
+			<h2 id="featured-highlights-title">Featured Highlights</h2>
+			if len(highlights) > 0 {
+				<span class="section-count">{ len(highlights) } live</span>
+			} else {
+				<span class="section-count">None live</span>
+			}
+		</div>
+		if len(highlights) > 0 {
+			<div class="carousel" data-carousel="true">
+				<button class="carousel-btn" type="button" data-carousel="prev" aria-label="Previous highlight">
+					<span aria-hidden="true">‹</span>
+				</button>
+				<div class="carousel-track" data-carousel-track="true" tabindex="0" aria-label="Featured highlights">
+					for _, highlight := range highlights {
+						@HighlightCard(highlight)
+					}
+				</div>
+				<button class="carousel-btn" type="button" data-carousel="next" aria-label="Next highlight">
+					<span aria-hidden="true">›</span>
+				</button>
+			</div>
+		} else {
+			<p class="card empty">No highlights yet. The first featured build is still loading.</p>
+		}
+	</section>
+}
+
+templ HighlightCard(highlight models.Highlight) {
+	if highlight.Href != "" {
+		<a class="card highlight-card" href={ highlight.Href }>
+			@HighlightContent(highlight)
+		</a>
+	} else {
+		<div class="card highlight-card">
+			@HighlightContent(highlight)
+		</div>
+	}
+}
+
+templ HighlightContent(highlight models.Highlight) {
+	if highlight.Image != "" {
+		<img src={ highlight.Image } alt="" width="640" height="360" loading="lazy"/>
+	}
+	if highlight.Kicker != "" {
+		<p class="tag">{ highlight.Kicker }</p>
+	}
+	<h3>{ highlight.Title }</h3>
+	<p>{ highlight.Summary }</p>
+}
+
+templ DispatchesSection(category string, articles []models.Article) {
+	<section id="dispatches" aria-labelledby="latest-dispatches-title">
+		<div class="section-head">
+			<h2 id="latest-dispatches-title">Latest Dispatches</h2>
+			if len(articles) > 0 {
+				<span class="section-count">{ len(articles) } shown</span>
+			} else {
+				<span class="section-count">None yet</span>
+			}
+		</div>
+		@LatestDispatches(category, articles, false)
+	</section>
+}
+
+templ LatestDispatches(category string, articles []models.Article, restoreFocus bool) {
+	<div id="latest-dispatches">
+		<div class="chips" role="group" aria-label="Filter dispatches by category">
+			@CategoryChip("All", "", models.CategorySlug(category), restoreFocus)
+			for _, label := range models.ArticleCategories {
+				@CategoryChip(label, models.CategorySlug(label), models.CategorySlug(category), restoreFocus)
+			}
+		</div>
+		if len(articles) > 0 {
+			<div class="dispatch-list">
+				for _, article := range articles {
+					@DispatchCard(article)
+				}
+			</div>
+		} else if category != "" {
+			<p class="card empty">No dispatches in this category yet.</p>
+		} else {
+			<p class="card empty">No dispatches yet. The first note ships with the next build.</p>
+		}
+	</div>
+}
+
+templ CategoryChip(label string, slug string, selected string, restoreFocus bool) {
+	if slug == selected {
+		if restoreFocus {
+			<a class="chip is-active" href={ CategoryURL(slug) } hx-get={ CategoryURL(slug) } hx-target="#latest-dispatches" hx-swap="outerHTML" hx-push-url="true" aria-current="true" autofocus>{ label }</a>
+		} else {
+			<a class="chip is-active" href={ CategoryURL(slug) } hx-get={ CategoryURL(slug) } hx-target="#latest-dispatches" hx-swap="outerHTML" hx-push-url="true" aria-current="true">{ label }</a>
+		}
+	} else {
+		<a class="chip" href={ CategoryURL(slug) } hx-get={ CategoryURL(slug) } hx-target="#latest-dispatches" hx-swap="outerHTML" hx-push-url="true">{ label }</a>
+	}
+}
+
+templ DispatchCard(article models.Article) {
+	<article class="card dispatch-card">
+		<p class="tag">{ article.Category }</p>
+		<h3><a href={ "/dispatches/" + article.Slug }>{ article.Title }</a></h3>
+		<p>{ article.Summary }</p>
+		if article.CreatedAt != "" {
+			<p class="section-count">{ FormatDate(article.CreatedAt) }</p>
+		}
+	</article>
 }
