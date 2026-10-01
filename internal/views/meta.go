@@ -1,6 +1,8 @@
 package views
 
 import (
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -61,6 +63,32 @@ func CategoryURL(slug string) string {
 		return "/"
 	}
 	return "/?category=" + slug
+}
+
+func DispatchesURL(category string, page int) string {
+	query := url.Values{}
+	if category != "" {
+		query.Set("category", category)
+	}
+	if page > 1 {
+		query.Set("page", strconv.Itoa(page))
+	}
+	if encoded := query.Encode(); encoded != "" {
+		return "/dispatches?" + encoded
+	}
+	return "/dispatches"
+}
+
+func XShareURL(pageURL string, title string) string {
+	return "https://twitter.com/intent/tweet?url=" + url.QueryEscape(pageURL) + "&text=" + url.QueryEscape(title)
+}
+
+func FacebookShareURL(pageURL string) string {
+	return "https://www.facebook.com/sharer/sharer.php?u=" + url.QueryEscape(pageURL)
+}
+
+func LinkedInShareURL(pageURL string) string {
+	return "https://www.linkedin.com/sharing/share-offsite/?url=" + url.QueryEscape(pageURL)
 }
 
 func FormatDate(value string) string {

@@ -1,0 +1,32 @@
+package views
+
+templ ErrorPage(meta PageMeta, notFound bool) {
+	@Layout(meta) {
+		<section class="error-page">
+			<img src="/static/img/mascot.webp" alt="Digit" width="300" height="450"/>
+			<div>
+				if notFound {
+					<p class="kicker">404 · NOT FOUND</p>
+					<h1>Page not found</h1>
+					<p class="lede">That address doesn’t lead to a page here.</p>
+				} else {
+					<p class="kicker">500 · SERVER ERROR</p>
+					<h1>Something went wrong</h1>
+					<p class="lede">The page could not be loaded. Please try again.</p>
+				}
+				<a class="btn btn-primary" href="/">Back home</a>
+			</div>
+		</section>
+	}
+}
+
+templ ErrorFragment(notFound bool) {
+	<section class="error-fragment" role="alert">
+		if notFound {
+			<h2>Page not found</h2>
+		} else {
+			<h2>Something went wrong</h2>
+		}
+		<a href="/">Back home</a>
+	</section>
+}

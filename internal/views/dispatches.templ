@@ -1,0 +1,95 @@
+package views
+
+import (
+	"github.com/CodeToole/waitaminutedigital_go/internal/models"
+)
+
+templ DispatchesPage(meta PageMeta, category string, articles []models.Article, page int, totalPages int, total int) {
+	@Layout(meta) {
+		@DispatchesContent(category, articles, page, totalPages, total)
+	}
+}
+
+templ DispatchesContent(category string, articles []models.Article, page int, totalPages int, total int) {
+	<section class="dispatch-index" id="dispatches-content" aria-labelledby="dispatches-title">
+		<div class="section-head">
+			<h1 id="dispatches-title">Dispatches</h1>
+			if total > 0 {
+				<span class="section-count">{ total } published</span>
+			} else {
+				<span class="section-count">None yet</span>
+			}
+		</div>
+		<div class="chips" role="group" aria-label="Filter dispatches by category">
+			@DispatchCategoryChip("All", "", models.CategorySlug(category))
+			for _, label := range models.ArticleCategories {
+				@DispatchCategoryChip(label, models.CategorySlug(label), models.CategorySlug(category))
+			}
+		</div>
+		if len(articles) > 0 {
+			<div class="dispatch-list">
+				for _, article := range articles {
+					@DispatchCard(article)
+				}
+			</div>
+		} else if category != "" {
+			<p class="card empty">No dispatches in this category yet.</p>
+		} else {
+			<p class="card empty">No dispatches yet. The first note ships with the next build.</p>
+		}
+		if totalPages > 1 {
+			<nav class="pagination" aria-label="Dispatches pages">
+				if page > 1 {
+					@PageLink("Previous", category, page-1)
+				}
+				<span class="section-count">Page { page } of { totalPages }</span>
+				if page < totalPages {
+					@PageLink("Next", category, page+1)
+				}
+			</nav>
+		}
+	</section>
+}
+
+templ DispatchCategoryChip(label string, slug string, selected string) {
+	if slug == selected {
+		<a class="chip is-active" href={ DispatchesURL(slug, 1) } hx-get={ DispatchesURL(slug, 1) } hx-target="#dispatches-content" hx-swap="outerHTML" hx-push-url="true" aria-current="page">{ label }</a>
+	} else {
+		<a class="chip" href={ DispatchesURL(slug, 1) } hx-get={ DispatchesURL(slug, 1) } hx-target="#dispatches-content" hx-swap="outerHTML" hx-push-url="true">{ label }</a>
+	}
+}
+
+templ PageLink(label string, category string, page int) {
+	<a class="page-link" href={ DispatchesURL(models.CategorySlug(category), page) } hx-get={ DispatchesURL(models.CategorySlug(category), page) } hx-target="#dispatches-content" hx-swap="outerHTML" hx-push-url="true">{ label }</a>
+}
+
+templ ArticlePage(meta PageMeta, article models.Article, readTime int, body templ.Component) {
+	@Layout(meta) {
+		<article class="article-shell">
+			<div class="article-meta">
+				<p class="tag">{ article.Category }</p>
+				if article.CreatedAt != "" {
+					<p class="section-count">{ FormatDate(article.CreatedAt) }</p>
+				}
+				<p class="section-count">{ readTime } min read</p>
+			</div>
+			<h1>{ article.Title }</h1>
+			<p class="article-summary card">{ article.Summary }</p>
+			<div class="card article-body">
+				@body
+			</div>
+			@ShareLinks(meta.Canonical, article.Title)
+			<p class="article-nav"><a href="/dispatches">Back to Dispatches</a></p>
+		</article>
+	}
+}
+
+templ ShareLinks(pageURL string, title string) {
+	<div class="article-share" aria-label="Share this dispatch">
+		<a href={ XShareURL(pageURL, title) } target="_blank" rel="noopener noreferrer">X</a>
+		<a href={ FacebookShareURL(pageURL) } target="_blank" rel="noopener noreferrer">Facebook</a>
+		<a href={ LinkedInShareURL(pageURL) } target="_blank" rel="noopener noreferrer">LinkedIn</a>
+		<button type="button" data-copy-link={ pageURL }>Copy Link</button>
+		<span class="copy-status" data-copy-status role="status" aria-live="polite"></span>
+	</div>
+}

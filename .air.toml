@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "tmp/main.exe"
+  entrypoint = ["./tmp/main.exe"]
   cmd = "templ generate; if ($LASTEXITCODE -eq 0) { go build -o ./tmp/main.exe ./cmd/web }"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "bin", "data"]

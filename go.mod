@@ -5,12 +5,16 @@ go 1.27.0
 require (
 	github.com/a-h/templ v0.3.1020
 	github.com/labstack/echo/v4 v4.16.0
+	github.com/microcosm-cc/bluemonday v1.0.27
+	github.com/yuin/goldmark v1.8.6
 	modernc.org/sqlite v1.60.1
 )
 
 require (
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/css v1.0.1 // indirect
 	github.com/labstack/gommon v0.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

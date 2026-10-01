@@ -11,6 +11,7 @@ import (
 	"time"
 
 	appdb "github.com/CodeToole/waitaminutedigital_go/internal/db"
+	"github.com/labstack/echo/v4"
 )
 
 func TestStaticAssetsAndHomeLayout(t *testing.T) {
@@ -127,7 +128,7 @@ func TestHomeResponses(t *testing.T) {
 	}
 }
 
-func testServer(t *testing.T) (http.Handler, *sql.DB) {
+func testServer(t *testing.T) (*echo.Echo, *sql.DB) {
 	t.Helper()
 	t.Chdir(filepath.Join("..", ".."))
 	database, err := appdb.Open(filepath.Join(t.TempDir(), "site.db"))
@@ -179,7 +180,13 @@ func seedHomeTestData(t *testing.T, database *sql.DB) {
 }
 
 func TestLayoutContract(t *testing.T) {
-	server, _ := testServer(t)
+	server, database := testServer(t)
+	if _, err := database.Exec(
+		`INSERT INTO article (title, slug, category, summary, body_md, published) VALUES (?, ?, ?, ?, ?, ?)`,
+		"Some dispatch", "some-slug", "Devlog", "A test dispatch", "## Test body", true,
+	); err != nil {
+		t.Fatalf("insert layout fixture: %v", err)
+	}
 	tests := []struct {
 		name string
 		path string

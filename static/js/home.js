@@ -33,3 +33,34 @@
   track.addEventListener("scroll", update, { passive: true });
   update();
 })();
+
+document.querySelectorAll("[data-copy-link]").forEach(function (button) {
+  button.addEventListener("click", async function () {
+    const pageURL = button.getAttribute("data-copy-link");
+    const status = button.parentElement.querySelector("[data-copy-status]");
+    let copied = false;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(pageURL);
+        copied = true;
+      } else {
+        const field = document.createElement("textarea");
+        field.value = pageURL;
+        field.setAttribute("readonly", "");
+        field.style.position = "fixed";
+        field.style.opacity = "0";
+        document.body.appendChild(field);
+        field.select();
+        copied = document.execCommand("copy");
+        field.remove();
+      }
+    } catch {
+      copied = false;
+    }
+
+    if (status) {
+      status.textContent = copied ? "Copied!" : "Copy failed";
+    }
+  });
+});
