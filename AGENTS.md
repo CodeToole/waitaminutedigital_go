@@ -1,0 +1,1 @@
+Read SPEC.md before every phase. The FastHTML reference at C:\dev\waitaminutedigital_fh is the source of truth for page content and layout.
