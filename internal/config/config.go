@@ -1,8 +1,8 @@
 package config
 
 import (
+	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 )
 
@@ -17,7 +17,7 @@ type Config struct {
 }
 
 // Load reads configuration from environment variables, supplying safe local defaults.
-func Load() Config {
+func Load() (Config, error) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -31,7 +31,10 @@ func Load() Config {
 	siteDB := os.Getenv("SITE_DB")
 	if siteDB == "" {
 		if runtime.GOOS == "windows" {
-			siteDB = filepath.Join("data", "site.db")
+			siteDB = "./data/site.db"
+			if err := os.MkdirAll("data", 0755); err != nil {
+				return Config{}, fmt.Errorf("create database directory: %w", err)
+			}
 		} else {
 			siteDB = "/home/data/site.db"
 		}
@@ -43,5 +46,5 @@ func Load() Config {
 		SiteURL:           siteURL,
 		AdminPasswordHash: os.Getenv("ADMIN_PASSWORD_HASH"),
 		SessionSecret:     os.Getenv("SESSION_SECRET"),
-	}
+	}, nil
 }

@@ -1,0 +1,71 @@
+package views
+
+templ Layout(title string, active string, children ...templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta name="theme-color" content="#0a0a0c"/>
+			<title>{ title }</title>
+			<link rel="icon" href="/favicon.ico" sizes="any"/>
+			<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+			<link rel="stylesheet" href="/static/css/site.css"/>
+		</head>
+		<body>
+			<a class="skip" href="#main-content">Skip to content</a>
+			@Header(active)
+			<main id="main-content">
+				for _, child := range children {
+					@child
+				}
+			</main>
+			@Footer()
+			<script src="/static/js/home.js" defer></script>
+		</body>
+	</html>
+}
+
+templ Header(active string) {
+	<header class="site-header">
+		<nav class="nav-bar wrap" aria-label="Main navigation">
+			<a class="brand" href="/" aria-label="Waitaminute Digital home">
+				<img class="brand-mark" src="/static/img/logo-128.webp" alt="" width="40" height="40"/>
+				<span class="wordmark">WAITAMINUTE</span>
+				<span class="badge">Digital</span>
+			</a>
+			<input class="nav-toggle sr-only" type="checkbox" id="site-menu" aria-label="Toggle navigation"/>
+			<label class="nav-burger" for="site-menu" aria-hidden="true">
+				<span class="burger-bar"></span>
+				<span class="burger-bar"></span>
+				<span class="burger-bar"></span>
+			</label>
+			<div class="nav-links">
+				@NavLink("Home", "/", active == "home")
+				@NavLink("Work", "/work", active == "work")
+				@NavLink("About", "/about", active == "about")
+				<a class="btn-contact" href="mailto:hello@waitaminutedigital.com">Contact</a>
+			</div>
+		</nav>
+	</header>
+}
+
+templ NavLink(label string, href string, active bool) {
+	if active {
+		<a class="nav-link" href={ href } aria-current="page">{ label }</a>
+	} else {
+		<a class="nav-link" href={ href }>{ label }</a>
+	}
+}
+
+templ Footer() {
+	<footer class="site-footer">
+		<div class="footer-bar wrap">
+			<p class="copyright">© 2026 Waitaminute Digital</p>
+			<div class="footer-links">
+				<a href="/">Home</a>
+				<a href="mailto:hello@waitaminutedigital.com">Contact</a>
+			</div>
+		</div>
+	</footer>
+}
