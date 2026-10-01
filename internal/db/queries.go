@@ -52,6 +52,16 @@ func ListPublishedArticles(ctx context.Context, database *sql.DB, category strin
 	return articles, err
 }
 
+func ListAllPublishedArticles(ctx context.Context, database *sql.DB) ([]models.Article, error) {
+	const query = `
+		SELECT id, title, slug, category, summary, body_md, cover_image, published, created_at,
+		       EXISTS(SELECT 1 FROM highlight WHERE article_id = article.id)
+		FROM article
+		WHERE published = 1
+		ORDER BY created_at DESC, id DESC`
+	return queryArticles(ctx, database, query)
+}
+
 func ListPublishedArticlesPage(ctx context.Context, database *sql.DB, category string, page int, perPage int) ([]models.Article, int, int, error) {
 	if page < 1 {
 		page = 1

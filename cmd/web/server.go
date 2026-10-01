@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/CodeToole/waitaminutedigital_go/internal/auth"
@@ -39,6 +40,7 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	e.HideBanner = true
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(cacheControlMiddleware)
 	e.HTTPErrorHandler = handlers.NewHTTPErrorHandler(site)
 	sessions := scs.New()
 	sessions.Lifetime = 12 * time.Hour
@@ -69,6 +71,12 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	e.POST("/contact", handlers.SubmitContact(site, database, settings.Notifier))
 	e.GET("/health", handlers.Health)
 	e.HEAD("/health", headOnly(handlers.Health))
+	e.GET("/sitemap.xml", handlers.NewSitemap(site, database))
+	e.HEAD("/sitemap.xml", headOnly(handlers.NewSitemap(site, database)))
+	e.GET("/robots.txt", handlers.Robots(site))
+	e.HEAD("/robots.txt", headOnly(handlers.Robots(site)))
+	e.GET("/feed.xml", handlers.NewFeed(site, database))
+	e.HEAD("/feed.xml", headOnly(handlers.NewFeed(site, database)))
 
 	admin := e.Group("/admin", middleware.CSRFWithConfig(middleware.CSRFConfig{
 		TokenLookup:    "form:_csrf",
@@ -112,6 +120,19 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	protected.POST("/inquiries/:id/delete", adminHandlers.DeleteInquiry)
 
 	return e
+}
+
+func cacheControlMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		path := c.Request().URL.Path
+		switch {
+		case path == "/admin" || strings.HasPrefix(path, "/admin/"):
+			c.Response().Header().Set(echo.HeaderCacheControl, "no-store")
+		case path == "/static" || strings.HasPrefix(path, "/static/") || path == "/uploads" || strings.HasPrefix(path, "/uploads/"):
+			c.Response().Header().Set(echo.HeaderCacheControl, "public, max-age=31536000")
+		}
+		return next(c)
+	}
 }
 
 func headOnly(handler echo.HandlerFunc) echo.HandlerFunc {
