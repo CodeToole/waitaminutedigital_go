@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -39,6 +40,7 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 
 	e := echo.New()
 	e.HideBanner = true
+	e.Use(canonicalHostMiddleware(settings.Production))
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(cacheControlMiddleware)
@@ -125,6 +127,22 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	protected.POST("/inquiries/:id/delete", adminHandlers.DeleteInquiry)
 
 	return e
+}
+
+func canonicalHostMiddleware(production bool) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			request := c.Request()
+			host := request.Host
+			if hostName, _, err := net.SplitHostPort(host); err == nil {
+				host = hostName
+			}
+			if production && request.URL.Path != "/health" && strings.EqualFold(host, "www.waitaminutedigital.com") {
+				return c.Redirect(http.StatusMovedPermanently, "https://waitaminutedigital.com"+request.URL.RequestURI())
+			}
+			return next(c)
+		}
+	}
 }
 
 func deduplicateCookieVary(next echo.HandlerFunc) echo.HandlerFunc {

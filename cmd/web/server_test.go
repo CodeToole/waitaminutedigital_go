@@ -14,6 +14,56 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func TestCanonicalHostRedirect(t *testing.T) {
+	tests := []struct {
+		name         string
+		production   bool
+		path         string
+		host         string
+		wantStatus   int
+		wantLocation string
+	}{
+		{
+			name:         "production redirects and preserves path and query",
+			production:   true,
+			path:         "/dispatches/a%2Fb?category=devlog&page=2",
+			host:         "www.waitaminutedigital.com",
+			wantStatus:   http.StatusMovedPermanently,
+			wantLocation: "https://waitaminutedigital.com/dispatches/a%2Fb?category=devlog&page=2",
+		},
+		{
+			name:       "health check is exempt",
+			production: true,
+			path:       "/health",
+			host:       "www.waitaminutedigital.com",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "development does not redirect",
+			path:       "/projects",
+			host:       "www.waitaminutedigital.com",
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server, _ := testServer(t, serverOptions{Production: tc.production})
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req.Host = tc.host
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
+
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("status = %d, want %d; body: %s", rec.Code, tc.wantStatus, rec.Body.String())
+			}
+			if got := rec.Header().Get(echo.HeaderLocation); got != tc.wantLocation {
+				t.Errorf("Location = %q, want %q", got, tc.wantLocation)
+			}
+		})
+	}
+}
+
 func TestStaticAssetsAndHomeLayout(t *testing.T) {
 	server, _ := testServer(t)
 	tests := []struct {
