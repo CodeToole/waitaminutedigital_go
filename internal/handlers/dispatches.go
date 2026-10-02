@@ -72,7 +72,7 @@ func NewArticle(site views.SiteConfig, database *sql.DB) echo.HandlerFunc {
 
 		image := article.CoverImage
 		if image == "" {
-			image = "/static/img/mascot_head.webp"
+			image = views.AssetURL("/static/img/mascot_head.webp")
 		}
 		meta := views.NewPageMeta(site, views.PageMeta{
 			Title:       article.Title,

@@ -1,0 +1,74 @@
+name: Test and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install templ
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
+
+      - name: Generate and check templ output
+        run: |
+          templ generate
+          git diff --exit-code -- internal/views/*_templ.go
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        shell: bash
+        run: az acr login --name "${{ secrets.ACR_NAME }}"
+
+      - name: Build and push amd64 image
+        shell: bash
+        run: |
+          LOGIN_SERVER="$(az acr show --name "${{ secrets.ACR_NAME }}" --query loginServer --output tsv)"
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg BUILD_VERSION="${GITHUB_SHA}" \
+            --tag "${LOGIN_SERVER}/waitaminutedigital-go:${GITHUB_SHA}" \
+            --push \
+            .
+
+      - name: Deploy container image
+        shell: bash
+        run: |
+          LOGIN_SERVER="$(az acr show --name "${{ secrets.ACR_NAME }}" --query loginServer --output tsv)"
+          az webapp config container set \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --container-image-name "${LOGIN_SERVER}/waitaminutedigital-go:${GITHUB_SHA}"
+          az webapp restart \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}"

@@ -3,7 +3,7 @@ package views
 templ ErrorPage(meta PageMeta, notFound bool) {
 	@Layout(meta) {
 		<section class="error-page">
-			<img src="/static/img/mascot.webp" alt="Digit" width="300" height="450"/>
+			<img src={ AssetURL("/static/img/mascot.webp") } alt="Digit" width="300" height="450"/>
 			<div>
 				if notFound {
 					<p class="kicker">404 · NOT FOUND</p>

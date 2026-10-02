@@ -46,14 +46,14 @@ func TestDispatchArticleResponses(t *testing.T) {
 			slug:       "draft-article",
 			insert:     true,
 			wantStatus: http.StatusNotFound,
-			want:       []string{"Page not found", `src="/static/img/mascot.webp"`, `href="/"`},
+			want:       []string{"Page not found", `src="/static/img/mascot.webp?v=`, `href="/"`},
 			wantAbsent: []string{"application/json", "draft secret"},
 		},
 		{
 			name:       "missing article is styled as not found",
 			slug:       "missing-article",
 			wantStatus: http.StatusNotFound,
-			want:       []string{"Page not found", `src="/static/img/mascot.webp"`, `href="/"`},
+			want:       []string{"Page not found", `src="/static/img/mascot.webp?v=`, `href="/"`},
 			wantAbsent: []string{"application/json", "{"},
 		},
 	}

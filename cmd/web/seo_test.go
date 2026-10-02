@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/xml"
+	"html"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -136,7 +139,6 @@ func TestCanonicalURLsAreAbsoluteAcrossRenderedPages(t *testing.T) {
 		{path: "/about", want: http.StatusOK},
 		{path: "/contact", want: http.StatusOK},
 		{path: "/missing-page", want: http.StatusNotFound},
-		{path: "/admin/login", want: http.StatusOK},
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
@@ -163,6 +165,62 @@ func TestCanonicalURLsAreAbsoluteAcrossRenderedPages(t *testing.T) {
 	}
 }
 
+func TestAdminPagesAreNoindexWithoutCanonicalOrOpenGraph(t *testing.T) {
+	client, _ := newAdminTestClient(t)
+	client.get("/admin/login")
+	if response := client.postForm("/admin/login", url.Values{"password": {"correct horse battery staple"}}, true, false); response.Code != http.StatusSeeOther {
+		t.Fatalf("login status = %d", response.Code)
+	}
+
+	for _, path := range []string{"/admin/login", "/admin/dispatches", "/admin/highlights", "/admin/inquiries"} {
+		t.Run(path, func(t *testing.T) {
+			response := client.get(path)
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+			}
+			body := response.Body.String()
+			if !strings.Contains(body, `<meta name="robots" content="noindex, nofollow">`) {
+				t.Error("admin page missing noindex robots meta")
+			}
+			if strings.Contains(body, `rel="canonical"`) || strings.Contains(body, `property="og:`) {
+				t.Error("admin page included canonical or Open Graph metadata")
+			}
+		})
+	}
+}
+
+func TestRenderedStaticAssetURLsAreVersioned(t *testing.T) {
+	server, database := testServer(t)
+	seedHomeTestData(t, database)
+	paths := []string{"/", "/game-room", "/about", "/dispatches/devlog-entry"}
+	assetPattern := regexp.MustCompile(`(?:src|href|srcset)="([^"]*/static/[^"]+)"`)
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			response := request(t, server, path)
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+			}
+			matches := assetPattern.FindAllStringSubmatch(response.Body.String(), -1)
+			if len(matches) == 0 {
+				t.Fatalf("page %q did not render static assets", path)
+			}
+			for _, match := range matches {
+				assetURL, err := url.Parse(html.UnescapeString(match[1]))
+				if err != nil {
+					t.Errorf("parse static URL %q: %v", match[1], err)
+					continue
+				}
+				if assetURL.Query().Get("v") == "" {
+					t.Errorf("static asset URL is missing a content version: %q", match[1])
+				}
+			}
+			if strings.Contains(response.Body.String(), `src="https://unpkg.com/htmx.org`) {
+				t.Error("page loaded HTMX from the public CDN")
+			}
+		})
+	}
+}
+
 func TestCacheControlForStaticUploadsAndAdmin(t *testing.T) {
 	uploadDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(uploadDir, "cache-test.txt"), []byte("upload"), 0600); err != nil {
@@ -170,10 +228,12 @@ func TestCacheControlForStaticUploadsAndAdmin(t *testing.T) {
 	}
 	server, _ := testServer(t, serverOptions{UploadDir: uploadDir})
 	tests := []struct {
-		path string
-		want string
+		path      string
+		want      string
+		immutable bool
 	}{
 		{path: "/static/css/site.css", want: "public, max-age=31536000"},
+		{path: "/static/css/site.css?v=abc123", want: "public, max-age=31536000, immutable", immutable: true},
 		{path: "/uploads/cache-test.txt", want: "public, max-age=31536000"},
 		{path: "/admin/login", want: "no-store"},
 	}
@@ -186,7 +246,28 @@ func TestCacheControlForStaticUploadsAndAdmin(t *testing.T) {
 			if got := rec.Header().Get("Cache-Control"); got != tc.want {
 				t.Errorf("Cache-Control = %q, want %q", got, tc.want)
 			}
+			if got := strings.Contains(rec.Header().Get("Cache-Control"), "immutable"); got != tc.immutable {
+				t.Errorf("immutable = %v, want %v", got, tc.immutable)
+			}
 		})
+	}
+}
+
+func TestVaryCookieIsNotDuplicated(t *testing.T) {
+	server, _ := testServer(t)
+	for _, path := range []string{"/", "/missing"} {
+		record := request(t, server, path)
+		cookieCount := 0
+		for _, value := range record.Header().Values("Vary") {
+			for _, token := range strings.Split(value, ",") {
+				if strings.EqualFold(strings.TrimSpace(token), "Cookie") {
+					cookieCount++
+				}
+			}
+		}
+		if cookieCount != 1 {
+			t.Errorf("Vary Cookie count on %s = %d, want exactly 1; Vary=%q", path, cookieCount, record.Header().Values("Vary"))
+		}
 	}
 }
 

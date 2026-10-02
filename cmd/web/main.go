@@ -7,12 +7,16 @@ import (
 	"github.com/CodeToole/waitaminutedigital_go/internal/config"
 	"github.com/CodeToole/waitaminutedigital_go/internal/db"
 	"github.com/CodeToole/waitaminutedigital_go/internal/notify"
+	"github.com/CodeToole/waitaminutedigital_go/internal/views"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Load configuration: %v", err)
+	}
+	if err := views.InitializeAssetVersion("static"); err != nil {
+		log.Fatalf("Initialize static asset version: %v", err)
 	}
 	database, err := db.Open(cfg.SiteDB)
 	if err != nil {
@@ -38,6 +42,7 @@ func main() {
 		UploadDir:         cfg.UploadDir,
 		ClarityID:         cfg.ClarityID,
 		Notifier:          notifier,
+		SessionSecret:     cfg.SessionSecret,
 	}).Start(addr); err != nil {
 		log.Fatalf("Server stopped: %v", err)
 	}

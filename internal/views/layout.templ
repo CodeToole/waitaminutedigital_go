@@ -9,17 +9,21 @@ templ Layout(meta PageMeta) {
 			<meta name="theme-color" content="#0a0a0c"/>
 			<title>{ meta.Title }</title>
 			<meta name="description" content={ meta.Description }/>
-			<link rel="canonical" href={ meta.Canonical }/>
-			<meta property="og:title" content={ meta.Title }/>
-			<meta property="og:description" content={ meta.Description }/>
-			<meta property="og:url" content={ meta.Canonical }/>
-			<meta property="og:image" content={ meta.ImageURL }/>
-			<meta property="og:type" content={ meta.OGType }/>
-			<meta name="twitter:card" content="summary_large_image"/>
+			if meta.NoIndex {
+				<meta name="robots" content="noindex, nofollow"/>
+			} else {
+				<link rel="canonical" href={ meta.Canonical }/>
+				<meta property="og:title" content={ meta.Title }/>
+				<meta property="og:description" content={ meta.Description }/>
+				<meta property="og:url" content={ meta.Canonical }/>
+				<meta property="og:image" content={ meta.ImageURL }/>
+				<meta property="og:type" content={ meta.OGType }/>
+				<meta name="twitter:card" content="summary_large_image"/>
+			}
 			<link rel="icon" href="/favicon.ico" sizes="any"/>
 			<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
-			<link rel="stylesheet" href="/static/css/site.css"/>
-			<script src="https://unpkg.com/htmx.org@2.0.8"></script>
+			<link rel="stylesheet" href={ AssetURL("/static/css/site.css") }/>
+			<script src={ AssetURL("/static/js/htmx.min.js") } defer></script>
 			if meta.ClarityID != "" {
 				@ClarityScript(meta.ClarityID)
 			}
@@ -31,7 +35,7 @@ templ Layout(meta PageMeta) {
 			{ children... }
 			</main>
 			@Footer()
-			<script src="/static/js/home.js" defer></script>
+			<script src={ AssetURL("/static/js/home.js") } defer></script>
 		</body>
 	</html>
 }
@@ -41,8 +45,8 @@ templ Header(path string) {
 		<nav class="nav-bar wrap" aria-label="Main navigation">
 			<a class="brand" href="/" aria-label="Waitaminute Digital home">
 				<picture>
-					<source srcset="/static/img/logo-128.webp" type="image/webp"/>
-					<img class="brand-mark" src="/static/img/logo.png" alt="" width="40" height="40"/>
+					<source srcset={ AssetURL("/static/img/logo-128.webp") } type="image/webp"/>
+					<img class="brand-mark" src={ AssetURL("/static/img/logo.png") } alt="" width="40" height="40"/>
 				</picture>
 				<span class="wordmark">WAITAMINUTE</span>
 				<span class="badge">EDITORIAL</span>

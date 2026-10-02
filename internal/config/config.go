@@ -50,6 +50,16 @@ func Load() (Config, error) {
 		siteURL = "https://waitaminutedigital.com"
 	}
 	production := strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production")
+	adminPasswordHash := strings.TrimSpace(os.Getenv("ADMIN_PASSWORD_HASH"))
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if production {
+		if adminPasswordHash == "" {
+			return Config{}, fmt.Errorf("ADMIN_PASSWORD_HASH is required in production")
+		}
+		if len(sessionSecret) < 32 {
+			return Config{}, fmt.Errorf("SESSION_SECRET must be at least 32 bytes in production")
+		}
+	}
 	uploadDir := "./data/uploads"
 	if production {
 		uploadDir = "/home/data/uploads"
@@ -82,8 +92,8 @@ func Load() (Config, error) {
 		Port:              port,
 		SiteDB:            siteDB,
 		SiteURL:           siteURL,
-		AdminPasswordHash: os.Getenv("ADMIN_PASSWORD_HASH"),
-		SessionSecret:     os.Getenv("SESSION_SECRET"),
+		AdminPasswordHash: adminPasswordHash,
+		SessionSecret:     sessionSecret,
 		Production:        production,
 		UploadDir:         uploadDir,
 		ClarityID:         clarityID,

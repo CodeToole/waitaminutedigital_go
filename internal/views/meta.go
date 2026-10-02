@@ -36,6 +36,7 @@ type PageMeta struct {
 	Canonical     string
 	ImageURL      string
 	ClarityID     string
+	NoIndex       bool
 }
 
 // NewPageMeta applies site defaults and resolves share URLs against SITE_URL.
@@ -59,7 +60,8 @@ func NewPageMeta(site SiteConfig, meta PageMeta) PageMeta {
 		canonicalPath = meta.Path
 	}
 	meta.Canonical = absoluteURL(site.SiteURL, canonicalPath)
-	meta.ImageURL = absoluteURL(site.SiteURL, meta.Image)
+	meta.ImageURL = absoluteURL(site.SiteURL, AssetURL(meta.Image))
+	meta.NoIndex = strings.HasPrefix(meta.Path, "/admin")
 	if site.Production && site.ClarityID != "" && !strings.HasPrefix(meta.Path, "/admin") {
 		meta.ClarityID = site.ClarityID
 	}

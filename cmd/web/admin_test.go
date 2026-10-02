@@ -279,6 +279,13 @@ func TestAdminSessionCookieSecureOnlyInProduction(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			client, _ := newAdminTestClientWithEnvironment(t, production)
 			client.get("/admin/login")
+			csrfCookie := client.cookies["waitaminute_csrf"]
+			if csrfCookie == nil {
+				t.Fatal("admin login did not set a CSRF cookie")
+			}
+			if csrfCookie.Secure != production {
+				t.Errorf("CSRF Secure = %v, want %v", csrfCookie.Secure, production)
+			}
 			response := client.postForm("/admin/login", url.Values{"password": {"correct horse battery staple"}}, true, false)
 			if response.Code != http.StatusSeeOther {
 				t.Fatalf("login status = %d", response.Code)

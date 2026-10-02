@@ -21,6 +21,7 @@ type serverOptions struct {
 	UploadDir         string
 	ClarityID         string
 	Notifier          notify.Notifier
+	SessionSecret     string
 }
 
 func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo.Echo {
@@ -48,7 +49,11 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	sessions.Cookie.HttpOnly = true
 	sessions.Cookie.Secure = settings.Production
 	sessions.Cookie.SameSite = http.SameSiteLaxMode
+	if settings.SessionSecret != "" {
+		sessions.Store = auth.NewHMACSessionStore(sessions.Store, []byte(settings.SessionSecret))
+	}
 	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
+	e.Use(deduplicateCookieVary)
 
 	e.Static("/static", "static")
 	e.Static("/uploads", settings.UploadDir)
@@ -122,6 +127,39 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	return e
 }
 
+func deduplicateCookieVary(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		header := c.Response().Header()
+		values := header.Values(echo.HeaderVary)
+		cookieSeen := false
+		normalized := make([]string, 0, len(values))
+		for _, value := range values {
+			tokens := strings.Split(value, ",")
+			kept := make([]string, 0, len(tokens))
+			for _, token := range tokens {
+				token = strings.TrimSpace(token)
+				if strings.EqualFold(token, "Cookie") {
+					if cookieSeen {
+						continue
+					}
+					cookieSeen = true
+				}
+				if token != "" {
+					kept = append(kept, token)
+				}
+			}
+			if len(kept) > 0 {
+				normalized = append(normalized, strings.Join(kept, ", "))
+			}
+		}
+		header.Del(echo.HeaderVary)
+		for _, value := range normalized {
+			header.Add(echo.HeaderVary, value)
+		}
+		return next(c)
+	}
+}
+
 func cacheControlMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		path := c.Request().URL.Path
@@ -129,7 +167,11 @@ func cacheControlMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		case path == "/admin" || strings.HasPrefix(path, "/admin/"):
 			c.Response().Header().Set(echo.HeaderCacheControl, "no-store")
 		case path == "/static" || strings.HasPrefix(path, "/static/") || path == "/uploads" || strings.HasPrefix(path, "/uploads/"):
-			c.Response().Header().Set(echo.HeaderCacheControl, "public, max-age=31536000")
+			cachePolicy := "public, max-age=31536000"
+			if c.QueryParam("v") != "" {
+				cachePolicy += ", immutable"
+			}
+			c.Response().Header().Set(echo.HeaderCacheControl, cachePolicy)
 		}
 		return next(c)
 	}

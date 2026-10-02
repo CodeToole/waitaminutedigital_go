@@ -24,8 +24,8 @@ templ Hero() {
 		<div class="card mascot-card">
 			<p class="status">STATUS: ACTIVE</p>
 			<picture>
-				<source srcset="/static/img/mascot.webp" type="image/webp"/>
-				<img src="/static/img/mascot.png" alt="Digit, a purple and black robot with a cyan face" width="900" height="1350" fetchpriority="high"/>
+				<source srcset={ AssetURL("/static/img/mascot.webp") } type="image/webp"/>
+				<img src={ AssetURL("/static/img/mascot.png") } alt="Digit, a purple and black robot with a cyan face" width="900" height="1350" fetchpriority="high"/>
 			</picture>
 		</div>
 	</section>
@@ -75,7 +75,7 @@ templ HighlightCard(highlight models.Highlight) {
 
 templ HighlightContent(highlight models.Highlight) {
 	if highlight.Image != "" {
-		<img src={ highlight.Image } alt="" width="640" height="360" loading="lazy"/>
+		<img src={ AssetURL(highlight.Image) } alt="" width="640" height="360" loading="lazy"/>
 	}
 	if highlight.Kicker != "" {
 		<p class="tag">{ highlight.Kicker }</p>

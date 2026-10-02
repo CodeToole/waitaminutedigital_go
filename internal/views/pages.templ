@@ -16,7 +16,7 @@ templ GameRoomPage(meta PageMeta) {
 				<span class="section-count">BUILD STATUS · WORK IN PROGRESS</span>
 			</div>
 			<div class="game-room-mascot">
-				<img src="/static/img/mascot.webp" alt="Digit, the Waitaminute Digital mascot" width="450" height="675" loading="lazy"/>
+				<img src={ AssetURL("/static/img/mascot.webp") } alt="Digit, the Waitaminute Digital mascot" width="450" height="675" loading="lazy"/>
 			</div>
 			<section class="game-catalog" aria-labelledby="game-catalog-title">
 				<div class="section-head">
@@ -79,8 +79,8 @@ templ AboutPage(meta PageMeta) {
 				</div>
 			</div>
 			<picture class="about-mascot">
-				<source srcset="/static/img/mascot_head.webp" type="image/webp"/>
-				<img src="/static/img/mascot_head.png" alt="Digit, the Waitaminute Digital mascot" width="480" height="480" loading="lazy"/>
+				<source srcset={ AssetURL("/static/img/mascot_head.webp") } type="image/webp"/>
+				<img src={ AssetURL("/static/img/mascot_head.png") } alt="Digit, the Waitaminute Digital mascot" width="480" height="480" loading="lazy"/>
 			</picture>
 		</article>
 	}

@@ -16,7 +16,7 @@ templ AdminDispatchesPage(meta PageMeta, csrf string, articles []models.Article,
 				@AdminArticleList(articles, csrf)
 			</div>
 		</section>
-		<script src="/static/js/admin.js" defer></script>
+		<script src={ AssetURL("/static/js/admin.js") } defer></script>
 	}
 }
 
@@ -67,7 +67,7 @@ templ AdminArticleFormPage(meta PageMeta, csrf string, article models.Article, i
 				</form>
 			</div>
 		</section>
-		<script src="/static/js/admin.js" defer></script>
+		<script src={ AssetURL("/static/js/admin.js") } defer></script>
 	}
 }
 
@@ -117,7 +117,7 @@ templ AdminHighlightsPage(meta PageMeta, csrf string, highlights []models.Highli
 			@AdminHighlightList(highlights, csrf)
 		</div>
 		</section>
-		<script src="/static/js/admin.js" defer></script>
+		<script src={ AssetURL("/static/js/admin.js") } defer></script>
 	}
 }
 
@@ -190,7 +190,7 @@ templ AdminInquiriesPage(meta PageMeta, csrf string, inquiries []models.Inquiry,
 			</div>
 		</div>
 		</section>
-		<script src="/static/js/admin.js" defer></script>
+		<script src={ AssetURL("/static/js/admin.js") } defer></script>
 	}
 }
 

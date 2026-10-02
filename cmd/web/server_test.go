@@ -218,7 +218,7 @@ func TestLayoutContract(t *testing.T) {
 				`href="https://www.linkedin.com/in/corneliustoole/" target="_blank" rel="noopener noreferrer"`,
 				"© " + strconv.Itoa(time.Now().UTC().Year()) + " Waitaminute Digital",
 				`property="og:title" content="Waitaminute Digital"`,
-				`property="og:image" content="https://waitaminutedigital.com/static/img/mascot_head.webp"`,
+				`property="og:image" content="https://waitaminutedigital.com/static/img/mascot_head.webp?v=`,
 				`name="twitter:card" content="summary_large_image"`,
 			},
 		},
@@ -244,8 +244,8 @@ func TestLayoutContract(t *testing.T) {
 					t.Errorf("body does not contain %q", want)
 				}
 			}
-			if count := strings.Count(body, `src="https://unpkg.com/htmx.org@2.0.8"`); count != 1 {
-				t.Errorf("HTMX script count = %d, want 1", count)
+			if count := strings.Count(body, `src="/static/js/htmx.min.js?v=`); count != 1 {
+				t.Errorf("self-hosted HTMX script count = %d, want 1", count)
 			}
 			assertOGTitleIsInHead(t, body)
 		})
