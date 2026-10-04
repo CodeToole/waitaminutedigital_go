@@ -578,6 +578,15 @@ code { color: var(--purple); }
 .project-list { display: grid; gap: 1rem; }
 .project-card h2,
 .game-card h3 { margin: 0.35rem 0 0.75rem; }
+.game-origin {
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.45rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+.game-attribution { max-width: 48rem; color: var(--muted); font-size: 0.95rem; }
 .about-page { max-width: 48rem; }
 .about-page p:not(.kicker) { max-width: 44rem; }
 .about-page {

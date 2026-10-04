@@ -20,17 +20,22 @@ templ GameRoomPage(meta PageMeta) {
 					<h2 id="game-catalog-title">Playable Games</h2>
 					<span class="section-count">1 game</span>
 				</div>
-				@GameCard("Asteroid Attack", "Godot 4.7", "Playable", "/game-room/asteroid-attack")
+				@GameCard("Asteroid Attack", "Godot 4.7", "Playable", "Course project", "/game-room/asteroid-attack")
 			</section>
 		</section>
 	}
 }
 
-templ GameCard(title string, engine string, status string, href string) {
+templ GameCard(title string, engine string, status string, origin string, href string) {
 	<article class="card game-card">
 		<p class="tag">{ engine }</p>
 		<h3>{ title }</h3>
-		<p class="section-count">{ status }</p>
+		<p class="section-count">
+			{ status }
+			if origin != "" {
+				<span class="game-origin">{ origin }</span>
+			}
+		</p>
 		if href != "" {
 			<a href={ href }>Follow the build</a>
 		}
@@ -42,7 +47,8 @@ templ AsteroidAttackPage(meta PageMeta) {
 		<article class="game-detail-page" aria-labelledby="asteroid-attack-title">
 			<p class="kicker">GAME ROOM · GODOT 4.7</p>
 			<h1 id="asteroid-attack-title">Asteroid Attack</h1>
-			<p class="lede">Pilot through an asteroid field and blast incoming rocks in this arcade-style space game.</p>
+			<p class="game-attribution">Built while completing GameDev.tv's Godot 4 2D Game Dev course. I implemented the game in Godot/GDScript, debugged gameplay issues, exported it for the web, and integrated the playable build into this website.</p>
+			<p class="lede">Pilot through an asteroid field and nudge the rocks into the green zone in this arcade-style space game.</p>
 			<p class="game-how-to-play"><strong>How to play:</strong> Push the asteroids into the green zone. Collect them all!</p>
 			<section class="game-controls" aria-labelledby="game-controls-title">
 				<h2 id="game-controls-title">Controls</h2>

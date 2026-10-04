@@ -25,7 +25,7 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 		{
 			name:       "game room",
 			path:       "/game-room",
-			want:       []string{"Game Room · Waitaminute Digital", "Playable Games", "Asteroid Attack", "Godot 4.7", "Playable", `href="/game-room/asteroid-attack"`},
+			want:       []string{"Game Room · Waitaminute Digital", "Playable Games", "Asteroid Attack", "Godot 4.7", "Playable", "Course project", `href="/game-room/asteroid-attack"`},
 			activeLink: `href="/game-room" aria-current="page">Game Room</a>`,
 		},
 		{
@@ -34,6 +34,8 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 			want: []string{
 				"Asteroid Attack · Waitaminute Digital",
 				"Pilot through an asteroid field",
+				"Built while completing GameDev.tv",
+				"s Godot 4 2D Game Dev course. I implemented the game in Godot/GDScript, debugged gameplay issues, exported it for the web, and integrated the playable build into this website.",
 				`<h2 id="game-controls-title">Controls</h2>`,
 				`src="/static/games/asteroid-attack/index.html"`,
 				`href="/static/games/asteroid-attack/index.html" target="_blank"`,
