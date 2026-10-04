@@ -56,6 +56,10 @@ templ AsteroidAttackPage(meta PageMeta) {
 					loading="lazy"
 				></iframe>
 			</div>
+			<div class="game-actions">
+				<button class="btn btn-primary game-fire-button" type="button" data-game-fire aria-label="Hold to fire in Asteroid Attack">Hold to fire</button>
+				<p class="game-fire-hint" role="status" data-game-fire-status>Use this button on touch screens, or press Space while the game is focused.</p>
+			</div>
 			<a class="btn btn-primary game-fullscreen-link" href="/static/games/asteroid-attack/index.html" target="_blank" rel="noopener noreferrer">Play fullscreen</a>
 		</article>
 	}

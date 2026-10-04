@@ -38,6 +38,8 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 				`src="/static/games/asteroid-attack/index.html"`,
 				`href="/static/games/asteroid-attack/index.html" target="_blank"`,
 				`class="game-frame"`,
+				`data-game-fire`,
+				`src="/static/js/game-controls.js?v=`,
 			},
 			activeLink: `href="/game-room" aria-current="page">Game Room</a>`,
 		},

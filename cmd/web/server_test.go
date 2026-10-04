@@ -141,6 +141,53 @@ func TestGameAssetMIMETypesAndGzip(t *testing.T) {
 	}
 }
 
+func TestAsteroidAttackExportFilesAreServed(t *testing.T) {
+	server, _ := testServer(t)
+	page := request(t, server, "/static/games/asteroid-attack/index.html")
+	if page.Code != http.StatusOK {
+		t.Fatalf("export page status = %d, want %d; body: %s", page.Code, http.StatusOK, page.Body.String())
+	}
+	if !strings.Contains(page.Body.String(), `"executable":"index"`) {
+		t.Error("export page does not contain Godot engine configuration")
+	}
+
+	files := []string{
+		"index.js",
+		"index.pck",
+		"index.wasm",
+		"index.side.wasm",
+		"index.audio.worklet.js",
+		"index.audio.position.worklet.js",
+		"index.icon.png",
+		"index.apple-touch-icon.png",
+		"index.png",
+	}
+	for _, name := range files {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/static/games/asteroid-attack/"+name, nil)
+			req.Header.Set("Range", "bytes=0-0")
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
+			if rec.Code != http.StatusPartialContent {
+				t.Fatalf("status = %d, want %d", rec.Code, http.StatusPartialContent)
+			}
+			if got := rec.Header().Get(echo.HeaderCacheControl); got != "no-cache" {
+				t.Errorf("Cache-Control = %q, want no-cache", got)
+			}
+			switch filepath.Ext(name) {
+			case ".wasm":
+				if got := rec.Header().Get(echo.HeaderContentType); got != "application/wasm" {
+					t.Errorf("Content-Type = %q, want application/wasm", got)
+				}
+			case ".pck":
+				if got := rec.Header().Get(echo.HeaderContentType); got != "application/octet-stream" {
+					t.Errorf("Content-Type = %q, want application/octet-stream", got)
+				}
+			}
+		})
+	}
+}
+
 func gameAssetStaticDir(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
