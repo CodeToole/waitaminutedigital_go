@@ -35,7 +35,7 @@ jobs:
       - name: Generate and check templ output
         run: |
           templ generate
-          git diff --exit-code -- internal/views/*_templ.go
+          git diff --exit-code -- ':(glob)**/*_templ.go'
 
       - name: Vet
         run: go vet ./...

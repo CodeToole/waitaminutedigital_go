@@ -4,5 +4,5 @@ import "embed"
 
 // Files embeds SQL migrations into the application binary.
 //
-//go:embed 001_init.sql 002_highlight_article.sql
+//go:embed *.sql
 var Files embed.FS

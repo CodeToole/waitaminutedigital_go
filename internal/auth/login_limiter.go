@@ -12,6 +12,7 @@ const (
 )
 
 type LoginLimiter struct {
+	// This process-local state resets on restart and is not shared across app instances.
 	mu       sync.Mutex
 	failures map[string][]time.Time
 	now      func() time.Time

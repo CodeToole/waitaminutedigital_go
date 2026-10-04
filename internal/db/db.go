@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/CodeToole/waitaminutedigital_go/migrations"
@@ -23,8 +25,15 @@ func Open(path string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
+	// A single connection keeps SQLite access serialized and ensures in-memory databases
+	// remain consistent. WAL is intentionally disabled because the live DB is on Azure
+	// App Service network storage, where WAL's shared-memory files are not reliable.
 	database.SetMaxOpenConns(1)
 
+	if _, err := database.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+		database.Close()
+		return nil, fmt.Errorf("set database busy timeout: %w", err)
+	}
 	if err := database.Ping(); err != nil {
 		database.Close()
 		return nil, fmt.Errorf("connect to database: %w", err)
@@ -37,45 +46,170 @@ func Open(path string) (*sql.DB, error) {
 }
 
 func Migrate(ctx context.Context, database *sql.DB) error {
-	schema, err := migrations.Files.ReadFile("001_init.sql")
+	if _, err := database.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+		return fmt.Errorf("enable foreign keys: %w", err)
+	}
+	trackingTableExists, err := tableExists(ctx, database, "schema_migrations")
 	if err != nil {
-		return fmt.Errorf("read embedded schema: %w", err)
+		return fmt.Errorf("check migration tracking table: %w", err)
 	}
-	if _, err := database.ExecContext(ctx, string(schema)); err != nil {
-		return fmt.Errorf("apply database schema: %w", err)
+	if _, err := database.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version INTEGER PRIMARY KEY,
+			applied_at TEXT NOT NULL
+		)`); err != nil {
+		return fmt.Errorf("create migration tracking table: %w", err)
 	}
-	rows, err := database.QueryContext(ctx, `PRAGMA table_info(highlight)`)
+
+	if !trackingTableExists {
+		if err := baselineLegacySchema(ctx, database); err != nil {
+			return err
+		}
+	}
+
+	entries, err := migrations.Files.ReadDir(".")
 	if err != nil {
-		return fmt.Errorf("inspect highlight schema: %w", err)
+		return fmt.Errorf("list embedded migrations: %w", err)
 	}
-	articleIDColumn := false
+	type migrationFile struct {
+		version int
+		name    string
+	}
+	files := make([]migrationFile, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		versionText, _, ok := strings.Cut(entry.Name(), "_")
+		if !ok {
+			continue
+		}
+		version, err := strconv.Atoi(versionText)
+		if err != nil || version <= 0 {
+			return fmt.Errorf("invalid migration filename %q: expected a positive numeric prefix", entry.Name())
+		}
+		files = append(files, migrationFile{version: version, name: entry.Name()})
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].version < files[j].version
+	})
+	for i := 1; i < len(files); i++ {
+		if files[i-1].version == files[i].version {
+			return fmt.Errorf("duplicate migration version %d", files[i].version)
+		}
+	}
+
+	for _, file := range files {
+		if err := applyMigration(ctx, database, file.version, file.name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func baselineLegacySchema(ctx context.Context, database *sql.DB) error {
+	articleTableExists, err := tableExists(ctx, database, "article")
+	if err != nil {
+		return fmt.Errorf("check legacy article table: %w", err)
+	}
+	if !articleTableExists {
+		return nil
+	}
+
+	versions := []int{1}
+	articleIDColumn, err := columnExists(ctx, database, "highlight", "article_id")
+	if err != nil {
+		return fmt.Errorf("check legacy highlight schema: %w", err)
+	}
+	if articleIDColumn {
+		versions = append(versions, 2)
+	}
+
+	tx, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin legacy migration baseline: %w", err)
+	}
+	for _, version := range versions {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO schema_migrations (version, applied_at)
+			VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`, version); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("record legacy migration %d: %w", version, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit legacy migration baseline: %w", err)
+	}
+	return nil
+}
+
+func applyMigration(ctx context.Context, database *sql.DB, version int, name string) error {
+	sqlFile, err := migrations.Files.ReadFile(name)
+	if err != nil {
+		return fmt.Errorf("read migration %s: %w", name, err)
+	}
+	tx, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin migration %s: %w", name, err)
+	}
+	var applied bool
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(
+		SELECT 1 FROM schema_migrations WHERE version = ?
+	)`, version).Scan(&applied); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("check migration %s: %w", name, err)
+	}
+	if applied {
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("finish migration check %s: %w", name, err)
+		}
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, string(sqlFile)); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("apply migration %s: %w", name, err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO schema_migrations (version, applied_at)
+		VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`, version); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("record migration %s: %w", name, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit migration %s: %w", name, err)
+	}
+	return nil
+}
+
+func tableExists(ctx context.Context, database *sql.DB, name string) (bool, error) {
+	var exists bool
+	err := database.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM sqlite_master
+			WHERE type = 'table' AND name = ?
+		)`, name).Scan(&exists)
+	return exists, err
+}
+
+func columnExists(ctx context.Context, database *sql.DB, table, column string) (bool, error) {
+	rows, err := database.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
 	for rows.Next() {
 		var cid, notNull, primaryKey int
 		var name, columnType string
 		var defaultValue sql.NullString
 		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
-			rows.Close()
-			return fmt.Errorf("read highlight schema: %w", err)
+			return false, err
 		}
-		if name == "article_id" {
-			articleIDColumn = true
+		if name == column {
+			return true, nil
 		}
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
-		return fmt.Errorf("iterate highlight schema: %w", err)
+		return false, err
 	}
-	if err := rows.Close(); err != nil {
-		return fmt.Errorf("close highlight schema: %w", err)
-	}
-	if !articleIDColumn {
-		migration, err := migrations.Files.ReadFile("002_highlight_article.sql")
-		if err != nil {
-			return fmt.Errorf("read highlight migration: %w", err)
-		}
-		if _, err := database.ExecContext(ctx, string(migration)); err != nil {
-			return fmt.Errorf("apply highlight migration: %w", err)
-		}
-	}
-	return nil
+	return false, nil
 }
