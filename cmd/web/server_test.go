@@ -67,6 +67,22 @@ func TestCanonicalHostRedirect(t *testing.T) {
 	}
 }
 
+func TestHTTPServerTimeouts(t *testing.T) {
+	server := newHTTPServer(":8080", http.NotFoundHandler())
+	if server.ReadHeaderTimeout != 10*time.Second {
+		t.Errorf("ReadHeaderTimeout = %v, want %v", server.ReadHeaderTimeout, 10*time.Second)
+	}
+	if server.ReadTimeout != 30*time.Second {
+		t.Errorf("ReadTimeout = %v, want %v", server.ReadTimeout, 30*time.Second)
+	}
+	if server.WriteTimeout != 5*time.Minute {
+		t.Errorf("WriteTimeout = %v, want %v", server.WriteTimeout, 5*time.Minute)
+	}
+	if server.IdleTimeout != 120*time.Second {
+		t.Errorf("IdleTimeout = %v, want %v", server.IdleTimeout, 120*time.Second)
+	}
+}
+
 func TestStaticAssetsAndHomeLayout(t *testing.T) {
 	server, _ := testServer(t)
 	tests := []struct {
