@@ -60,6 +60,7 @@ func run() error {
 		ClarityID:         cfg.ClarityID,
 		Notifier:          notifier,
 		SessionSecret:     cfg.SessionSecret,
+		CSPEnforce:        cfg.CSPEnforce,
 	}))
 
 	signalContext, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

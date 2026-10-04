@@ -30,6 +30,7 @@ type Config struct {
 	ACSAccessKey      string
 	NotifyFrom        string
 	NotifyTo          string
+	CSPEnforce        bool
 }
 
 // Load reads configuration from environment variables, supplying safe local defaults.
@@ -87,6 +88,7 @@ func Load() (Config, error) {
 	if notifyTo == "" {
 		notifyTo = defaultNotifyTo
 	}
+	cspEnforce := strings.EqualFold(strings.TrimSpace(os.Getenv("CSP_ENFORCE")), "true")
 
 	return Config{
 		Port:              port,
@@ -101,6 +103,7 @@ func Load() (Config, error) {
 		ACSAccessKey:      strings.TrimSpace(os.Getenv("ACS_ACCESS_KEY")),
 		NotifyFrom:        strings.TrimSpace(os.Getenv("NOTIFY_FROM")),
 		NotifyTo:          notifyTo,
+		CSPEnforce:        cspEnforce,
 	}, nil
 }
 

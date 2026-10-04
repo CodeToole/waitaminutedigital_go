@@ -26,6 +26,30 @@ func TestLoadWindowsDefaultSiteDBCreatesDataDirectory(t *testing.T) {
 	}
 }
 
+func TestCSPEnforceDefaultsFalseUnlessTrue(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("APP_ENV", "")
+	t.Setenv("SITE_DB", "./data/site.db")
+	t.Setenv("CSP_ENFORCE", "")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned unexpected error: %v", err)
+	}
+	if cfg.CSPEnforce {
+		t.Fatal("CSPEnforce = true, want false by default")
+	}
+
+	t.Setenv("CSP_ENFORCE", "true")
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("Load() with CSP_ENFORCE=true returned error: %v", err)
+	}
+	if !cfg.CSPEnforce {
+		t.Fatal("CSPEnforce = false, want true")
+	}
+}
+
 func TestProductionRequiresAdminHashAndSessionSecret(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("APP_ENV", "production")

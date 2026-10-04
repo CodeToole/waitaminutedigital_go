@@ -83,6 +83,84 @@ func TestHTTPServerTimeouts(t *testing.T) {
 	}
 }
 
+func TestSecurityHeaders(t *testing.T) {
+	server, _ := testServer(t)
+	paths := []string{"/", "/admin/login", "/static/games/asteroid-attack/index.js"}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+			}
+
+			header := rec.Header()
+			if got := header.Get("X-Content-Type-Options"); got != "nosniff" {
+				t.Errorf("X-Content-Type-Options = %q, want nosniff", got)
+			}
+			if got := header.Get("Referrer-Policy"); got != "strict-origin-when-cross-origin" {
+				t.Errorf("Referrer-Policy = %q, want strict-origin-when-cross-origin", got)
+			}
+			if got := header.Get("Permissions-Policy"); got != "camera=(), microphone=(), geolocation=()" {
+				t.Errorf("Permissions-Policy = %q", got)
+			}
+			if got := header.Get("X-Frame-Options"); got != "SAMEORIGIN" {
+				t.Errorf("X-Frame-Options = %q, want SAMEORIGIN", got)
+			}
+			if got := header.Get("Content-Security-Policy"); got != "" {
+				t.Errorf("enforcing CSP header = %q, want empty by default", got)
+			}
+			csp := header.Get("Content-Security-Policy-Report-Only")
+			for _, want := range []string{
+				"script-src 'self' 'unsafe-inline' https://*.clarity.ms",
+				"style-src 'self' 'unsafe-inline'",
+				"img-src 'self' data: blob: https://*.clarity.ms",
+				"font-src 'self'",
+				"connect-src 'self' https://*.clarity.ms",
+				"frame-src 'self'",
+				"frame-ancestors 'self'",
+			} {
+				if !strings.Contains(csp, want) {
+					t.Errorf("CSP %q does not contain %q", csp, want)
+				}
+			}
+			hasWasmEval := strings.Contains(csp, "'wasm-unsafe-eval'")
+			if strings.HasPrefix(path, "/static/games/") && !hasWasmEval {
+				t.Errorf("game CSP %q does not contain 'wasm-unsafe-eval'", csp)
+			}
+			for _, directive := range []string{"worker-src 'self' blob:", "media-src 'self' blob:"} {
+				hasDirective := strings.Contains(csp, directive)
+				if strings.HasPrefix(path, "/static/games/") && !hasDirective {
+					t.Errorf("game CSP %q does not contain %q", csp, directive)
+				}
+				if !strings.HasPrefix(path, "/static/games/") && hasDirective {
+					t.Errorf("non-game CSP unexpectedly contains %q: %q", directive, csp)
+				}
+			}
+			if !strings.HasPrefix(path, "/static/games/") && hasWasmEval {
+				t.Errorf("non-game CSP unexpectedly contains 'wasm-unsafe-eval': %q", csp)
+			}
+		})
+	}
+}
+
+func TestCSPEnforceUsesEnforcingHeader(t *testing.T) {
+	server, _ := testServer(t, serverOptions{CSPEnforce: true})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	server.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Security-Policy"); got == "" {
+		t.Fatal("enforcing CSP header is empty")
+	}
+	if got := rec.Header().Get("Content-Security-Policy-Report-Only"); got != "" {
+		t.Errorf("report-only CSP header = %q, want empty when CSP_ENFORCE is true", got)
+	}
+}
+
 func TestStaticAssetsAndHomeLayout(t *testing.T) {
 	server, _ := testServer(t)
 	tests := []struct {
