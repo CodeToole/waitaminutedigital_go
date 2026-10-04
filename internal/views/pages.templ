@@ -6,24 +6,21 @@ templ GameRoomPage(meta PageMeta) {
 	@Layout(meta) {
 		<section class="game-room-page">
 			<div class="game-room-intro">
-				<p class="kicker">ARCADE · IN DEVELOPMENT</p>
+				<p class="kicker">ARCADE · PLAYABLE</p>
 				<h1>Game Room</h1>
-				<p class="lede">First build loading…</p>
-				<p>My first Godot game is in development. I’m learning by building a small game one honest step at a time.</p>
-				<div class="game-progress" role="progressbar" aria-label="First Godot game development progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="64">
-					<span class="game-progress-fill"></span>
-				</div>
-				<span class="section-count">BUILD STATUS · WORK IN PROGRESS</span>
+				<p class="lede">Play small games made at Waitaminute Digital.</p>
+				<p>Asteroid Attack is the first build. Open its game page for details and a playable browser version.</p>
+				<span class="section-count">1 PLAYABLE BUILD</span>
 			</div>
 			<div class="game-room-mascot">
 				<img src={ AssetURL("/static/img/mascot.webp") } alt="Digit, the Waitaminute Digital mascot" width="450" height="675" loading="lazy"/>
 			</div>
 			<section class="game-catalog" aria-labelledby="game-catalog-title">
 				<div class="section-head">
-					<h2 id="game-catalog-title">In Development</h2>
-					<span class="section-count">1 build</span>
+					<h2 id="game-catalog-title">Playable Games</h2>
+					<span class="section-count">1 game</span>
 				</div>
-				@GameCard("First Godot Game", "Godot", "In development", "/dispatches?category=game-room")
+				@GameCard("Asteroid Attack", "Godot 4.7", "Playable", "/game-room/asteroid-attack")
 			</section>
 		</section>
 	}
@@ -38,6 +35,30 @@ templ GameCard(title string, engine string, status string, href string) {
 			<a href={ href }>Follow the build</a>
 		}
 	</article>
+}
+
+templ AsteroidAttackPage(meta PageMeta) {
+	@Layout(meta) {
+		<article class="game-detail-page" aria-labelledby="asteroid-attack-title">
+			<p class="kicker">GAME ROOM · GODOT 4.7</p>
+			<h1 id="asteroid-attack-title">Asteroid Attack</h1>
+			<p class="lede">Pilot through an asteroid field and blast incoming rocks in this arcade-style space game.</p>
+			<section class="game-controls" aria-labelledby="game-controls-title">
+				<h2 id="game-controls-title">Controls</h2>
+				<p><kbd>W</kbd>/<kbd>↑</kbd> move · <kbd>A</kbd>/<kbd>←</kbd> and <kbd>D</kbd>/<kbd>→</kbd> steer · <kbd>Space</kbd> fire</p>
+			</section>
+			<div class="game-frame">
+				<iframe
+					src="/static/games/asteroid-attack/index.html"
+					title="Asteroid Attack game"
+					allow="fullscreen"
+					allowfullscreen
+					loading="lazy"
+				></iframe>
+			</div>
+			<a class="btn btn-primary game-fullscreen-link" href="/static/games/asteroid-attack/index.html" target="_blank" rel="noopener noreferrer">Play fullscreen</a>
+		</article>
+	}
 }
 
 templ ProjectsPage(meta PageMeta) {

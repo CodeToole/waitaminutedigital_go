@@ -42,7 +42,7 @@ func TestSitemapXMLContainsStaticAndPublishedPagesOnly(t *testing.T) {
 			t.Errorf("sitemap contains admin URL %q", entry.Location)
 		}
 	}
-	for _, path := range []string{"/", "/dispatches", "/game-room", "/projects", "/about", "/contact"} {
+	for _, path := range []string{"/", "/dispatches", "/game-room", "/game-room/asteroid-attack", "/projects", "/about", "/contact"} {
 		if _, ok := locations["https://waitaminutedigital.com"+path]; !ok {
 			t.Errorf("sitemap missing static path %q", path)
 		}
@@ -223,10 +223,11 @@ func TestRenderedStaticAssetURLsAreVersioned(t *testing.T) {
 
 func TestCacheControlForStaticUploadsAndAdmin(t *testing.T) {
 	uploadDir := t.TempDir()
+	staticDir := gameAssetStaticDir(t)
 	if err := os.WriteFile(filepath.Join(uploadDir, "cache-test.txt"), []byte("upload"), 0600); err != nil {
 		t.Fatalf("write upload fixture: %v", err)
 	}
-	server, _ := testServer(t, serverOptions{UploadDir: uploadDir})
+	server, _ := testServer(t, serverOptions{UploadDir: uploadDir, StaticDir: staticDir})
 	tests := []struct {
 		path      string
 		want      string
@@ -234,6 +235,9 @@ func TestCacheControlForStaticUploadsAndAdmin(t *testing.T) {
 	}{
 		{path: "/static/css/site.css", want: "public, max-age=31536000"},
 		{path: "/static/css/site.css?v=abc123", want: "public, max-age=31536000, immutable", immutable: true},
+		{path: "/static/games/asteroid-attack/index.wasm", want: "no-cache"},
+		{path: "/static/games/asteroid-attack/index.pck", want: "no-cache"},
+		{path: "/static/games/asteroid-attack/index.js", want: "no-cache"},
 		{path: "/uploads/cache-test.txt", want: "public, max-age=31536000"},
 		{path: "/admin/login", want: "no-store"},
 	}

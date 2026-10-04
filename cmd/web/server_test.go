@@ -1,9 +1,12 @@
 package main
 
 import (
+	"compress/gzip"
 	"database/sql"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -90,6 +93,78 @@ func TestStaticAssetsAndHomeLayout(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGameAssetMIMETypesAndGzip(t *testing.T) {
+	staticDir := gameAssetStaticDir(t)
+	server, _ := testServer(t, serverOptions{StaticDir: staticDir})
+	tests := []struct {
+		path        string
+		contentType string
+	}{
+		{path: "/static/games/asteroid-attack/index.wasm", contentType: "application/wasm"},
+		{path: "/static/games/asteroid-attack/index.pck", contentType: "application/octet-stream"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			response := request(t, server, tc.path)
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d; body: %s", response.Code, http.StatusOK, response.Body.String())
+			}
+			if got := response.Header().Get("Content-Type"); got != tc.contentType {
+				t.Errorf("Content-Type = %q, want %q", got, tc.contentType)
+			}
+		})
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/static/games/asteroid-attack/index.wasm", nil)
+	req.Header.Set(echo.HeaderAcceptEncoding, "gzip")
+	rec := httptest.NewRecorder()
+	server.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("gzip request status = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if got := rec.Header().Get(echo.HeaderContentEncoding); got != "gzip" {
+		t.Fatalf("Content-Encoding = %q, want gzip", got)
+	}
+	reader, err := gzip.NewReader(rec.Body)
+	if err != nil {
+		t.Fatalf("open gzip response: %v", err)
+	}
+	defer reader.Close()
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("read gzip response: %v", err)
+	}
+	if got, want := string(body), "wasm test fixture"; got != want {
+		t.Errorf("decompressed body = %q, want %q", got, want)
+	}
+}
+
+func gameAssetStaticDir(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	gameDir := filepath.Join(root, "games", "asteroid-attack")
+	if err := os.MkdirAll(gameDir, 0755); err != nil {
+		t.Fatalf("create game asset fixture directory: %v", err)
+	}
+	for name, content := range map[string]string{
+		"index.wasm": "wasm test fixture",
+		"index.pck":  "pck test fixture",
+		"index.js":   "console.log('game fixture')",
+	} {
+		if err := os.WriteFile(filepath.Join(gameDir, name), []byte(content), 0600); err != nil {
+			t.Fatalf("write %s fixture: %v", name, err)
+		}
+	}
+	cssDir := filepath.Join(root, "css")
+	if err := os.MkdirAll(cssDir, 0755); err != nil {
+		t.Fatalf("create CSS fixture directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cssDir, "site.css"), []byte("test stylesheet"), 0600); err != nil {
+		t.Fatalf("write stylesheet fixture: %v", err)
+	}
+	return root
 }
 
 func TestHeroKicker(t *testing.T) {

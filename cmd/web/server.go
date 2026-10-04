@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"net"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -20,17 +22,21 @@ type serverOptions struct {
 	AdminPasswordHash string
 	Production        bool
 	UploadDir         string
+	StaticDir         string
 	ClarityID         string
 	Notifier          notify.Notifier
 	SessionSecret     string
 }
 
 func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo.Echo {
-	settings := serverOptions{UploadDir: "./data/uploads"}
+	settings := serverOptions{UploadDir: "./data/uploads", StaticDir: "static"}
 	if len(options) > 0 {
 		settings = options[0]
 		if settings.UploadDir == "" {
 			settings.UploadDir = "./data/uploads"
+		}
+		if settings.StaticDir == "" {
+			settings.StaticDir = "static"
 		}
 	}
 	if settings.Notifier == nil {
@@ -44,6 +50,21 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(cacheControlMiddleware)
+	e.Use(gameAssetHeaders)
+	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Level: 5,
+		Skipper: func(c echo.Context) bool {
+			if !strings.HasPrefix(c.Request().URL.Path, "/static/games/") {
+				return true
+			}
+			switch strings.ToLower(path.Ext(c.Request().URL.Path)) {
+			case ".wasm", ".pck", ".js":
+				return false
+			default:
+				return true
+			}
+		},
+	}))
 	e.HTTPErrorHandler = handlers.NewHTTPErrorHandler(site)
 	sessions := scs.New()
 	sessions.Lifetime = 12 * time.Hour
@@ -57,7 +78,7 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
 	e.Use(deduplicateCookieVary)
 
-	e.Static("/static", "static")
+	e.StaticFS("/static", os.DirFS(settings.StaticDir))
 	e.Static("/uploads", settings.UploadDir)
 	e.File("/favicon.ico", "static/favicon.ico")
 	e.File("/apple-touch-icon.png", "static/apple-touch-icon.png")
@@ -69,6 +90,8 @@ func newServer(siteURL string, database *sql.DB, options ...serverOptions) *echo
 	e.HEAD("/dispatches/:slug", headOnly(handlers.NewArticle(site, database)))
 	e.GET("/game-room", handlers.GameRoom(site))
 	e.HEAD("/game-room", headOnly(handlers.GameRoom(site)))
+	e.GET("/game-room/asteroid-attack", handlers.AsteroidAttack(site))
+	e.HEAD("/game-room/asteroid-attack", headOnly(handlers.AsteroidAttack(site)))
 	e.GET("/projects", handlers.Projects(site))
 	e.HEAD("/projects", headOnly(handlers.Projects(site)))
 	e.GET("/about", handlers.About(site))
@@ -184,12 +207,29 @@ func cacheControlMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		switch {
 		case path == "/admin" || strings.HasPrefix(path, "/admin/"):
 			c.Response().Header().Set(echo.HeaderCacheControl, "no-store")
+		case strings.HasPrefix(path, "/static/games/"):
+			c.Response().Header().Set(echo.HeaderCacheControl, "no-cache")
 		case path == "/static" || strings.HasPrefix(path, "/static/") || path == "/uploads" || strings.HasPrefix(path, "/uploads/"):
 			cachePolicy := "public, max-age=31536000"
 			if c.QueryParam("v") != "" {
 				cachePolicy += ", immutable"
 			}
 			c.Response().Header().Set(echo.HeaderCacheControl, cachePolicy)
+		}
+		return next(c)
+	}
+}
+
+func gameAssetHeaders(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if !strings.HasPrefix(c.Request().URL.Path, "/static/games/") {
+			return next(c)
+		}
+		switch strings.ToLower(path.Ext(c.Request().URL.Path)) {
+		case ".wasm":
+			c.Response().Header().Set(echo.HeaderContentType, "application/wasm")
+		case ".pck":
+			c.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
 		}
 		return next(c)
 	}

@@ -16,7 +16,7 @@ import (
 
 const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>` + "\n"
 
-var sitemapPages = []string{"/", "/dispatches", "/game-room", "/projects", "/about", "/contact"}
+var sitemapPages = []string{"/", "/dispatches", "/game-room", "/game-room/asteroid-attack", "/projects", "/about", "/contact"}
 
 type sitemapDocument struct {
 	XMLName xml.Name     `xml:"urlset"`

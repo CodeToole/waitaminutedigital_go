@@ -20,6 +20,18 @@ func GameRoom(site views.SiteConfig) echo.HandlerFunc {
 	}
 }
 
+func AsteroidAttack(site views.SiteConfig) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		meta := views.NewPageMeta(site, views.PageMeta{
+			Title:       "Asteroid Attack",
+			Description: "Pilot through an asteroid field in Asteroid Attack, a playable Godot 4.7 arcade game.",
+			Path:        "/game-room/asteroid-attack",
+		})
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
+		return views.AsteroidAttackPage(meta).Render(c.Request().Context(), c.Response())
+	}
+}
+
 func Projects(site views.SiteConfig) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		meta := views.NewPageMeta(site, views.PageMeta{

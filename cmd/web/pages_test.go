@@ -25,7 +25,20 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 		{
 			name:       "game room",
 			path:       "/game-room",
-			want:       []string{"Game Room · Waitaminute Digital", "First build loading…", "My first Godot game is in development", "First Godot Game", "Godot", "In development", "role=\"progressbar\""},
+			want:       []string{"Game Room · Waitaminute Digital", "Playable Games", "Asteroid Attack", "Godot 4.7", "Playable", `href="/game-room/asteroid-attack"`},
+			activeLink: `href="/game-room" aria-current="page">Game Room</a>`,
+		},
+		{
+			name: "Asteroid Attack",
+			path: "/game-room/asteroid-attack",
+			want: []string{
+				"Asteroid Attack · Waitaminute Digital",
+				"Pilot through an asteroid field",
+				`<h2 id="game-controls-title">Controls</h2>`,
+				`src="/static/games/asteroid-attack/index.html"`,
+				`href="/static/games/asteroid-attack/index.html" target="_blank"`,
+				`class="game-frame"`,
+			},
 			activeLink: `href="/game-room" aria-current="page">Game Room</a>`,
 		},
 		{
