@@ -38,8 +38,10 @@ func TestPhase4PagesAndActiveNavigation(t *testing.T) {
 				`src="/static/games/asteroid-attack/index.html"`,
 				`href="/static/games/asteroid-attack/index.html" target="_blank"`,
 				`class="game-frame"`,
-				`data-game-fire`,
-				`src="/static/js/game-controls.js?v=`,
+				"Push the asteroids into the green zone. Collect them all!",
+				"steer",
+				"Best played on desktop with a keyboard.",
+				"Play fullscreen",
 			},
 			activeLink: `href="/game-room" aria-current="page">Game Room</a>`,
 		},
@@ -386,4 +388,19 @@ func inquiryCount(t *testing.T, database *sql.DB) int {
 		t.Fatalf("count inquiries: %v", err)
 	}
 	return count
+}
+
+func TestAsteroidAttackHasNoFireControls(t *testing.T) {
+	server, _ := testServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/game-room/asteroid-attack", nil)
+	rec := httptest.NewRecorder()
+	server.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	for _, banned := range []string{"Hold to fire", "Space", "game-controls.js", "data-game-fire", "game-fire"} {
+		if strings.Contains(rec.Body.String(), banned) {
+			t.Errorf("body unexpectedly contains %q", banned)
+		}
+	}
 }

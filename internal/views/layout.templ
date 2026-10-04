@@ -36,9 +36,6 @@ templ Layout(meta PageMeta) {
 			</main>
 			@Footer()
 			<script src={ AssetURL("/static/js/home.js") } defer></script>
-			if meta.Path == "/game-room/asteroid-attack" {
-				<script src={ AssetURL("/static/js/game-controls.js") } defer></script>
-			}
 		</body>
 	</html>
 }

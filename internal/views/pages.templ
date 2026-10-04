@@ -43,9 +43,11 @@ templ AsteroidAttackPage(meta PageMeta) {
 			<p class="kicker">GAME ROOM · GODOT 4.7</p>
 			<h1 id="asteroid-attack-title">Asteroid Attack</h1>
 			<p class="lede">Pilot through an asteroid field and blast incoming rocks in this arcade-style space game.</p>
+			<p class="game-how-to-play"><strong>How to play:</strong> Push the asteroids into the green zone. Collect them all!</p>
 			<section class="game-controls" aria-labelledby="game-controls-title">
 				<h2 id="game-controls-title">Controls</h2>
-				<p><kbd>W</kbd>/<kbd>↑</kbd> move · <kbd>A</kbd>/<kbd>←</kbd> and <kbd>D</kbd>/<kbd>→</kbd> steer · <kbd>Space</kbd> fire</p>
+				<p><kbd>W</kbd> / <kbd>↑</kbd> move · <kbd>A</kbd> / <kbd>←</kbd> and <kbd>D</kbd> / <kbd>→</kbd> steer</p>
+				<p class="game-desktop-note">Best played on desktop with a keyboard.</p>
 			</section>
 			<div class="game-frame">
 				<iframe
@@ -55,10 +57,6 @@ templ AsteroidAttackPage(meta PageMeta) {
 					allowfullscreen
 					loading="lazy"
 				></iframe>
-			</div>
-			<div class="game-actions">
-				<button class="btn btn-primary game-fire-button" type="button" data-game-fire aria-label="Hold to fire in Asteroid Attack">Hold to fire</button>
-				<p class="game-fire-hint" role="status" data-game-fire-status>Use this button on touch screens, or press Space while the game is focused.</p>
 			</div>
 			<a class="btn btn-primary game-fullscreen-link" href="/static/games/asteroid-attack/index.html" target="_blank" rel="noopener noreferrer">Play fullscreen</a>
 		</article>
